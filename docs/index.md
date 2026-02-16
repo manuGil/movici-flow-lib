@@ -23,3 +23,7 @@ features:
   - title: Charts
     details: Integrated Chart.js charting alongside map visualizations within the same view.
 ---
+
+::: warning
+This documentation was generated using an AI assistant and may contain inaccuracies. Please verify the information with the source code or official documentation.
+:::

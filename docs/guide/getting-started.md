@@ -1,5 +1,9 @@
 # Getting Started
 
+::: warning
+This documentation was generated using an AI assistant and may contain inaccuracies. Please verify the information with the source code or official documentation.
+:::
+
 Movici Flow Lib is a Vue 3 + TypeScript visualization library for interactive geospatial data exploration. It renders spatial data using **Deck.gl** and **Mapbox GL**, with charts via **Chart.js**, and manages a Projects → Scenarios → Views navigation workflow backed by a pluggable Backend interface.
 
 ## Quick Setup
@@ -56,11 +60,11 @@ See the [Backend API reference](/api/backend) for the full list of service inter
 
 Once the plugin and backend are configured, the main entry points are:
 
-| Component | Purpose |
-|-----------|---------|
+| Component      | Purpose                                                                 |
+| -------------- | ----------------------------------------------------------------------- |
 | `FlowMainView` | Top-level view that manages the Projects → Scenarios → Views navigation |
-| `Deck` | Deck.gl map canvas |
-| `MapVis` | Combined map visualization with layer management |
+| `Deck`         | Deck.gl map canvas                                                      |
+| `MapVis`       | Combined map visualization with layer management                        |
 
 Start with `FlowMainView` to get the full navigation experience, or use `Deck` and `MapVis` directly for embedding map visualizations in custom layouts.
 

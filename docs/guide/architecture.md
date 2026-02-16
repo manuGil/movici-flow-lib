@@ -1,4 +1,7 @@
 # Architecture
+::: warning
+This documentation was generated using an AI assistant and may contain inaccuracies. Please verify the information with the source code or official documentation.
+:::
 
 ## Plugin Entry Point
 
@@ -14,17 +17,17 @@ The plugin iterates over all exported components and registers them on the Vue a
 
 `src/types/backend.ts` defines the `Backend` interface with these services:
 
-| Service | Responsibility |
-|---------|---------------|
-| `dataset` | List datasets, fetch data and state, get metadata |
-| `project` | List projects |
-| `scenario` | List and get scenarios |
-| `view` | CRUD operations on views |
-| `updates` | List and get simulation updates |
-| `geocode` | Geocoding suggestions and results |
-| `user` | Get current user |
-| `summary` | Get dataset summaries (by scenario or dataset) |
-| `fetch` | Convert requests to fetch-compatible format |
+| Service    | Responsibility                                    |
+| ---------- | ------------------------------------------------- |
+| `dataset`  | List datasets, fetch data and state, get metadata |
+| `project`  | List projects                                     |
+| `scenario` | List and get scenarios                            |
+| `view`     | CRUD operations on views                          |
+| `updates`  | List and get simulation updates                   |
+| `geocode`  | Geocoding suggestions and results                 |
+| `user`     | Get current user                                  |
+| `summary`  | Get dataset summaries (by scenario or dataset)    |
+| `fetch`    | Convert requests to fetch-compatible format       |
 
 The library is decoupled from any specific API — host apps provide a Backend implementation. **Capabilities** (`"projects"`, `"geocode"`, `"user"`) gate optional features at runtime.
 
@@ -86,12 +89,12 @@ Pluggable visual modules in `src/visualizers/visualizerModules/`:
 
 `src/views/` contains page-level components that map to navigation steps:
 
-| View | Step |
-|------|------|
-| `FlowMainView` | Entry point, routes to other views |
-| `FlowProjectView` | Project selection |
-| `FlowScenarioView` | Scenario selection within a project |
-| `FlowDatasetView` | Dataset exploration |
+| View                    | Step                                          |
+| ----------------------- | --------------------------------------------- |
+| `FlowMainView`          | Entry point, routes to other views            |
+| `FlowProjectView`       | Project selection                             |
+| `FlowScenarioView`      | Scenario selection within a project           |
+| `FlowDatasetView`       | Dataset exploration                           |
 | `FlowVisualizationView` | Map visualization with visualizers and charts |
 
 ## Composables

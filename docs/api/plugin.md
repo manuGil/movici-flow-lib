@@ -4,6 +4,10 @@ The Flow plugin is the main entry point for integrating Movici Flow Lib into a V
 
 **Source:** `src/index.ts`
 
+::: warning
+This documentation was generated using an AI assistant and may contain inaccuracies. Please verify the information with the source code or official documentation.
+:::
+
 ## Installation
 
 ```ts
@@ -22,8 +26,8 @@ interface FlowPluginOptions {
 }
 ```
 
-| Property | Type | Description |
-|----------|------|-------------|
+| Property    | Type               | Description                                                 |
+| ----------- | ------------------ | ----------------------------------------------------------- |
 | `homeRoute` | `RouteLocationRaw` | Vue Router location to navigate to when leaving the Flow UI |
 
 ## Plugin Behavior

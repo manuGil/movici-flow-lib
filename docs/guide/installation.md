@@ -1,5 +1,9 @@
 # Installation
 
+::: warning
+This documentation was generated using an AI assistant and may contain inaccuracies. Please verify the information with the source code or official documentation.
+:::
+
 Movici Flow Lib is currently not an NPM package. To use this library you must add it to your project as a git submodule and configure your build tooling.
 
 ## 1. Add as a Git Submodule
