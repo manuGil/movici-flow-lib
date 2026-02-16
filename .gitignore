@@ -24,3 +24,8 @@ yarn-error.log*
 *.sw*
 
 coverage
+
+# Docs
+docs/node_modules
+docs/.vitepress/dist
+docs/.vitepress/cache
