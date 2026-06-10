@@ -110,12 +110,61 @@ export function groupToFeatureCollection(
   return { type: "FeatureCollection", features };
 }
 
-export function extractGeometryColumns() {}
+export function extractGeometryColumns(
+  feature: Feature,
+  geomType: GeometryType,
+  geomKey: string,
+  epsg: number | null,
+): Record<string, unknown> {
+  const crs = determineCRS(epsg);
+  const geom = (feature as any).geometry;
+
+  if (geomType === "point") {
+    const [lon, lat] = geom?.coordinates ?? [0, 0];
+    const [x, y] = reverseTransform([lon, lat], crs);
+    return { "geometry.x": x, "geometry.y": y };
+  }
+
+  if (geomType === "linestring") {
+    const [lon, lat] = geom?.coordinates ?? [0, 0];
+    const [x, y] = reverseTransform([lon, lat], crs);
+    return { "geometry.x": x, "geometry.y": y };
+  }
+
+  // Polygon case: GeoJSON stores polygons as [[ring]], for now we are keeping ONLY outter ring. FIXME:
+  const rings: [number, number][][] = geom?.coordinates ?? [];
+  const outerRing: [number, number][] = rings[0] ?? [];
+  const transformed = reverseTransformArray(outerRing, crs);
+  return { [geomKey]: transformed.map((x, y) => [x, y]) };
+}
 
 export function computeLineStringLength(coords: number[][]): number {
   return 0; // TODO: Implement logic to compute the length of a LineString geometry. Check with Pelle if this is needed in the front-end or if it can be computed in the back-end and provided as a property of the feature.
 }
 
-export function geomColumstoWgs84Geometry(): any {
-  return {}; // TODO: Implement logic to transform geometry columns to WGS84 geometry. This will likely involve using the transform function from the crs module, and determining the source CRS using the determineCRS function.
+export function geomColumnsToWgs84Geometry(
+  geomColumns: Record<string, unknown>,
+  geomType: GeometryType,
+  geomKey: string,
+  epsg: number | null,
+): any {
+  const crs = determineCRS(epsg);
+
+  if (geomType == "point") {
+    const x = geomColumns["geometry.x"] as number;
+    const y = geomColumns["geometry.y"] as number;
+    const [lon, lat] = transform([x, y], crs);
+    return { type: "Point", coordinates: [lon, lat] };
+  }
+
+  if (geomType == "linestring") {
+    const line = geomColumns[geomKey] as number[][];
+    const transformed = transformArray(line as [number, number][], crs);
+    return { type: "LineString", coordinates: transformed.map(([lon, lat]) => [lon, lat]) };
+  }
+
+  // Polygon case
+  const ring = geomColumns[geomKey] as number[][];
+  const transformed = transformArray(ring as [number, number][], crs);
+  return { type: "Polygon", coordinates: [transformed.map(([lon, lat]) => [lon, lat])] }; // TODO: Implement logic to transform geometry columns to WGS84 geometry. This will likely involve using the transform function from the crs module, and determining the source CRS using the determineCRS function.
 }
