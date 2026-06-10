@@ -1,7 +1,7 @@
 import { computed } from "vue";
 import { EditableGeoJsonLayer, ViewMode, SelectionLayer } from "@deck.gl-community/editable-layers";
 import type { Layer } from "@deck.gl/core";
-import { useEditorStore } from "@movici-flow-lib/stores/editor";
+import { useEditorStore } from "../stores/editor";
 
 const VIEW_MODE = new ViewMode();
 
@@ -46,7 +46,7 @@ export function useEditorlayers() {
           store.editModeKey,
         );
         const layerMode =
-          isScopeMode && groupName !== store.entiryGroup ? VIEW_MODE : store.editMode;
+          isScopeMode && groupName !== store.entityGroup ? VIEW_MODE : store.editMode;
 
         return new EditableGeoJsonLayer({
           id: `editable-${groupName}`,
@@ -95,7 +95,7 @@ export function useEditorlayers() {
 
     // Add a selection layer on top when multiple selection mode is on
     // User draws a rectangle to select multiple features
-    if (store.editModeKey === "select-rect" && store.entityGroup) {
+    if (store.editModeKey === "select-rectangle" && store.entityGroup) {
       editableLayers.push(
         new SelectionLayer({
           id: "editor-selection",
