@@ -1,40 +1,37 @@
 import { defaultClient } from "../api/client";
-import {
-    IClient
-} from "../types";
+import { IClient } from "../types";
 import { global } from "@/i18n";
-import { defineStore } from 'pinia';
-import { type Ref, ref } from 'vue';
+import { defineStore } from "pinia";
+import { type Ref, ref } from "vue";
 import { useSettingsStore } from "./settings";
 import { useSnackbar } from "@movici-flow-lib/baseComposables/useSnackbar";
 import { setClient, setProjections } from "@movici-flow-lib/crs";
+// FIXME: implement solution to handle data with current dataset api
+export const useMainStore = defineStore("main", () => {
+  const client: Ref<IClient> = ref(
+    defaultClient({
+      baseURL: "/",
+      callbacks: {
+        http(e) {
+          failMessage(e.message);
+        },
+      },
+    }),
+  );
+  const initialized = ref(false);
+  const settingsStore = useSettingsStore();
+  const { failMessage } = useSnackbar();
 
-export const useMainStore = defineStore("main", () => { 
-    const client: Ref<IClient> = ref(
-        defaultClient({
-            baseURL: "/",
-            callbacks: {
-                http(e) {
-                    failMessage(e.message);
-                },
-            },
-        }),
-    );
-    const initialized = ref(false);
-    const settingsStore = useSettingsStore();
-    const { failMessage } = useSnackbar();
+  return {
+    initialized,
+    client,
+    async initilizedApp() {
+      settingsStore.loadLocal();
 
-    return {
-        initialized,
-        client,
-        async initilizedApp() {
-            settingsStore.loadLocal();
-
-            global.locale.value = settingsStore.locale;
-            client.value.baseURL = settingsStore.baseURL;
-            setClient(client.value);
-            setProjections(settingsStore.projections);
-
-         }
-    }
+      global.locale.value = settingsStore.locale;
+      client.value.baseURL = settingsStore.baseURL;
+      setClient(client.value);
+      setProjections(settingsStore.projections);
+    },
+  };
 });
