@@ -1,15 +1,9 @@
 <template>
   <!-- TODO: does this belongs here -->
   <nav class="editor-toolbar is-flex is-align-items-center px-4 py-2">
-    <rounter-link :to="{ name: 'home', params: { step: 'dataset' } }">
-      <o-button icon-left="arrow-lef" icon-pack="fas" size="small" varian="black">
-        Datasets
-      </o-button>
-    </rounter-link>
     <span class="dataset-name is-size-6 has-text-weight-semibold ml-4 mr-auto">
-      {{ datasetDisplayName }}
+      Editing: {{ datasetDisplayName }}
     </span>
-
     <span v-if="store.dirtyCount > 0" class="is-size-7 has-text-warning-dark mr-3">
       {{ store.dirtyCount }} unsaved change{{ store.dirtyCount !== 1 ? "s" : "" }}
     </span>
