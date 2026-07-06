@@ -270,6 +270,7 @@ export const useEditorStore = defineStore("editor", () => {
     }
     const result = await flowStore.backend?.dataset.getData({ datasetUUID: uuid });
     if (result) {
+      datasetUUID.value = uuid;
       dataset.value = result as DatasetWithData;
       const groups = Object.keys(result.data ?? {});
       if (groups.length > 0) {
