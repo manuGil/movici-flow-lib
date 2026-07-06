@@ -1,5 +1,5 @@
 <template>
-  <div id="mapbox-container" class="mapbox-container">
+  <div class="mapbox-container">
     <div ref="mapEl" class="deck-map" />
     <canvas
       ref="deckCanvas"
@@ -112,6 +112,10 @@ const map = ref<mapboxgl.Map>();
 const deck = ref<DeckGL>();
 const mapEl = ref<HTMLDivElement | null>(null);
 const deckCanvas = ref<HTMLCanvasElement | null>(null);
+let resizeObserver: ResizeObserver | undefined;
+let resizeFrame = 0;
+let lastWidth = 0;
+let lastHeight = 0;
 const eventListeners = ref<Record<DeckEvent, Map<string, DeckEventCallback>>>({
   click: new Map<string, DeckEventCallback>(),
 
@@ -243,6 +247,26 @@ function initMapBox(viewState: ViewState) {
     interactive: false,
   });
 }
+
+//  Handlging the map size is necessary to avoid misplacements of maps and layers
+//  when changing between tabs with maps.
+function handleResize() {
+  const el = mapEl.value;
+  if (!el) return;
+  const { width, height } = el.getBoundingClientRect();
+  if (!width || !height) return;
+  if (width === lastWidth && height === lastHeight) return;
+  lastWidth = width;
+  lastHeight = height;
+  map.value?.resize();
+  deck.value?.setProps({ width: Math.round(width), height: Math.round(height) });
+  // Prevents bbox camera's zoom remain fitted to an element with wrong dimensions
+  // camera becomes viewState-based and we leave the view untouched.
+  if (props.camera?.bbox) {
+    updateCamera(props.camera);
+  }
+}
+
 onMounted(() => {
   if (!mapEl.value || !deckCanvas.value) return;
   const initialViewState = props.camera?.viewState || DEFAULT_VIEWSTATE;
@@ -255,8 +279,18 @@ onMounted(() => {
     }
     loaded.value = true;
   });
+
+  if (mapEl.value) {
+    resizeObserver = new ResizeObserver(() => {
+      cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(handleResize);
+    });
+    resizeObserver.observe(mapEl.value);
+  }
 });
 onBeforeUnmount(() => {
+  cancelAnimationFrame(resizeFrame);
+  resizeObserver?.disconnect();
   map.value?.remove();
   deck.value?.finalize();
   deck.value?.getCanvas()?.remove();
