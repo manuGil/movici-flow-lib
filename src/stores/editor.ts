@@ -1,7 +1,6 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { useMainStore } from "@movici-flow-lib/stores/main";
-import LocalDatasetService from "@movici-flow-lib/api/LocalDatasetService";
+import { useFlowStore } from "@movici-flow-lib/stores/flow";
 import type { DatasetPatch } from "@movici-flow-lib/api/datasets";
 import type { DatasetWithData } from "@movici-flow-lib/types";
 import {
@@ -75,6 +74,7 @@ export const useEditorStore = defineStore("editor", () => {
 
   const editMode = computed(() => modeInstances[editModeKey.value]);
   const historyStore = useEditorHistoryStore();
+  const flowStore = useFlowStore();
 
   const entityGroupNames = computed<string[]>(() => {
     if (!dataset.value?.data) return [];
@@ -265,9 +265,11 @@ export const useEditorStore = defineStore("editor", () => {
     historyStore.clear();
     error.value = null;
 
-    const mainStore = useMainStore();
-    const service = new LocalDatasetService(mainStore.client);
-    const result = await service.getData({ datasetUUID: uuid });
+    if (!flowStore.backend) {
+      error.value = "Backend not initialized";
+      return;
+    }
+    const result = await flowStore.backend?.dataset.getData({ datasetUUID: uuid });
     if (result) {
       dataset.value = result as DatasetWithData;
       const groups = Object.keys(result.data ?? {});
@@ -632,10 +634,17 @@ export const useEditorStore = defineStore("editor", () => {
     const savedGroup = entityGroup.value;
     const savedId = selectedId.value;
     try {
-      const mainStore = useMainStore();
-      const service = new LocalDatasetService(mainStore.client);
-      await service.patch(datasetUUID.value, patch.value);
-      // Relaod datset so dataset.value reflects the saved values
+      if (!flowStore.backend) {
+        throw new Error("Backend not initialized");
+      }
+      if (!flowStore.hasCapability("patchDatasets")) {
+        throw new Error("Dataset patching is not supported by thi backend");
+      }
+      if (!flowStore.backend.datasetEditor) {
+        throw new Error("Dataset editor service is not configured");
+      }
+      await flowStore.backend.datasetEditor.patch(datasetUUID.value, patch.value);
+      // Reload datset so dataset.value reflects the saved values
       await loadDataset(datasetUUID.value);
       // Reinitialize wgs84 features (projection is already loaded)
       initWgs84Features();
