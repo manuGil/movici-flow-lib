@@ -1,8 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { useFlowStore } from "@movici-flow-lib/stores/flow";
-import type { DatasetPatch } from "@movici-flow-lib/api/datasets";
-import type { DatasetWithData } from "@movici-flow-lib/types";
+import type { DatasetWithData, DatasetPatch } from "@movici-flow-lib/types";
 import {
   detectGeometryType,
   getGeometryKey,
