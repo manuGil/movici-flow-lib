@@ -17,6 +17,7 @@ import type {
   GeocodeSuggestion,
   ViewPayload,
 } from "@movici-flow-lib/types";
+import { DatasetCrudResponse } from "./api";
 
 export interface ViewService {
   create(scenarioUUID: UUID, view: ViewPayload): Promise<ViewCrudResponse | null>;
@@ -75,6 +76,15 @@ export interface DatasetService {
   getMetaData: (datasetUUID: UUID) => Promise<Dataset | null>;
 }
 
+export interface DatasetPatch {
+  data: Record<string, Record<string, unknown[]>>;
+  deleted?: Record<string, number[]>;
+}
+
+export interface DatasetEditorService {
+  patch(datasetUUID: UUID, patch: DatasetPatch): Promise<DatasetCrudResponse | null>;
+}
+
 export interface UserService {
   get(): Promise<User | null>;
 }
@@ -90,10 +100,12 @@ export interface FetchRequestService {
   ): { url: string; options: RequestInit };
 }
 
-export type BackendCapability = "projects" | "geocode" | "user";
+export type BackendCapability = "projects" | "geocode" | "user" | "editor" | "patchDatasets";
+
 export interface Backend {
   getCapabilities(): BackendCapability[];
   dataset: DatasetService;
+  datasetEditor?: DatasetEditorService;
   geocode: GeocodeService;
   project: ProjectService;
   scenario: ScenarioService;
