@@ -182,10 +182,20 @@ watch(
     map.value?.setStyle(showMap.value ? basemap : (null as unknown as string));
   },
 );
+
+// Avoid erros and GPU buffer dangling when loading layers to canvas. Necessary
+// for correct behaviour between preview data and editor tabs.
+function applyLayers() {
+  if (!deck.value || !mapEl.value) return;
+  const { width, height } = mapEl.value.getBoundingClientRect();
+  if (!width || !height) return;
+  deck.value.setProps({ layers: props.layers });
+}
+
 watch(
   () => props.layers,
-  (layers) => {
-    deck.value?.setProps({ layers });
+  () => {
+    applyLayers();
   },
 );
 
@@ -260,6 +270,9 @@ function handleResize() {
   lastHeight = height;
   map.value?.resize();
   deck.value?.setProps({ width: Math.round(width), height: Math.round(height) });
+  // Now that the canvas has a real size, apply any layers that couldn't be
+  // initialized while the tab was hidden
+  applyLayers();
   // Prevents bbox camera's zoom remain fitted to an element with wrong dimensions
   // camera becomes viewState-based and we leave the view untouched.
   if (props.camera?.bbox) {
@@ -277,6 +290,9 @@ onMounted(() => {
     if (props.camera) {
       updateCamera(props.camera);
     }
+    // Apply layers that populated before the deck existed.
+    // Not applied while the tabs are hidden, so layers never init on zero size canvas.
+    applyLayers();
     loaded.value = true;
   });
 
