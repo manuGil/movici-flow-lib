@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { useFlowStore } from "@movici-flow-lib/stores/flow";
+import { CAPABILITIES } from "@movici-flow-lib/api";
 import type { DatasetWithData, DatasetPatch } from "@movici-flow-lib/types";
 import {
   detectGeometryType,
@@ -638,7 +639,7 @@ export const useEditorStore = defineStore("editor", () => {
       if (!flowStore.backend) {
         throw new Error("Backend not initialized");
       }
-      if (!flowStore.hasCapability("patchDatasets")) {
+      if (!flowStore.hasCapability(CAPABILITIES.EDITOR)) {
         throw new Error("Dataset patching is not supported by thi backend");
       }
       if (!flowStore.backend.datasetEditor) {
