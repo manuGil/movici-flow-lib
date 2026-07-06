@@ -217,9 +217,9 @@ export const useEditorStore = defineStore("editor", () => {
     // Collect all entity groups that have changes
     const allGroups = new Set([...changes.value.keys(), ...geometryChanges.value.keys()]);
 
-    for (const group of allGroups) {
-      const propChanges = changes.value.get(group) ?? new Map();
-      const geomChanges = geometryChanges.value.get(group) ?? new Map();
+    for (const entityGroup of allGroups) {
+      const propChanges = changes.value.get(entityGroup) ?? new Map();
+      const geomChanges = geometryChanges.value.get(entityGroup) ?? new Map();
 
       // Collect all entity IDs that have any change
       const allIds = new Set([...propChanges.keys(), ...geomChanges.keys()]);
@@ -239,14 +239,14 @@ export const useEditorStore = defineStore("editor", () => {
           propArrays[propName].push(value);
         }
       }
-      data[group] = { id: ids, ...propArrays };
+      data[entityGroup] = { id: ids, ...propArrays };
     }
 
     // Collect deletions for pre-existing entities. New entities that are created and deleted within the same editing session don't need to be sent as they don't exist in the back-end.
     const deleted: Record<string, number[]> = {};
-    for (const [group, ids] of deletedEntityIds.value.entries()) {
+    for (const [entityGroup, ids] of deletedEntityIds.value.entries()) {
       if (ids.size > 0) {
-        deleted[group] = Array.from(ids);
+        deleted[entityGroup] = Array.from(ids);
       }
     }
     return { data, ...(Object.keys(deleted).length > 0 ? { deleted } : {}) };
@@ -456,24 +456,24 @@ export const useEditorStore = defineStore("editor", () => {
   }
 
   function updateProperty(
-    group: string,
+    entityGroup: string,
     id: number,
     prop: string,
     newValue: unknown,
     skipHistory = false,
   ) {
     // Determine old value (from pending changes or original data)
-    const pending = changes.value.get(group)?.get(id);
-    const groupData = dataset.value?.data?.[group] as Record<string, unknown[]> | undefined;
+    const pending = changes.value.get(entityGroup)?.get(id);
+    const groupData = dataset.value?.data?.[entityGroup] as Record<string, unknown[]> | undefined;
     const ids: number[] = (groupData?.["id"] as number[]) ?? [];
     const index = ids.indexOf(id);
     const originalValue = index !== -1 ? (groupData?.[prop] as unknown[])?.[index] : undefined;
     const oldValue = pending?.[prop] !== undefined ? pending[prop] : originalValue;
 
-    if (!changes.value.has(group)) {
-      changes.value.set(group, new Map());
+    if (!changes.value.has(entityGroup)) {
+      changes.value.set(entityGroup, new Map());
     }
-    const groupChanges = changes.value.get(group)!;
+    const groupChanges = changes.value.get(entityGroup)!;
     if (!groupChanges.has(id)) {
       groupChanges.set(id, {});
     }
@@ -482,7 +482,7 @@ export const useEditorStore = defineStore("editor", () => {
     if (!skipHistory) {
       historyStore.push({
         kind: "property",
-        entityGroup: group,
+        entityGroup,
         id,
         property: prop,
         oldValue,
@@ -491,8 +491,8 @@ export const useEditorStore = defineStore("editor", () => {
     }
   }
 
-  function revertProperty(group: string, id: number, prop: string, skipHistory = false) {
-    const groupChanges = changes.value.get(group);
+  function revertProperty(entityGroup: string, id: number, prop: string, skipHistory = false) {
+    const groupChanges = changes.value.get(entityGroup);
     if (!groupChanges) return;
     const entityChanges = groupChanges.get(id);
     if (!entityChanges) return;
@@ -514,7 +514,7 @@ export const useEditorStore = defineStore("editor", () => {
     pendingGeometryChanges?: Record<string, unknown>;
   }) {
     const {
-      entityGroup: group,
+      entityGroup,
       id,
       isNew,
       dataIndex,
@@ -526,7 +526,7 @@ export const useEditorStore = defineStore("editor", () => {
     } = params;
 
     // Restore the entity row into columna data at its original index
-    const groupData = dataset.value?.data?.[group] as Record<string, unknown[]> | undefined;
+    const groupData = dataset.value?.data?.[entityGroup] as Record<string, unknown[]> | undefined;
     if (groupData) {
       for (const [key, value] of Object.entries(rowData)) {
         if (groupData[key]) {
@@ -536,26 +536,27 @@ export const useEditorStore = defineStore("editor", () => {
     }
 
     // Restore wgs84Feature at its original index
-    const currentFeatures = [...(wgs84Features.value[group] ?? [])];
+    const currentFeatures = [...(wgs84Features.value[entityGroup] ?? [])];
     currentFeatures.splice(wgs84FeatureIndex, 0, wgs84Feature);
-    wgs84Features.value = { ...wgs84Features.value, [group]: currentFeatures };
+    wgs84Features.value = { ...wgs84Features.value, [entityGroup]: currentFeatures };
 
     // Restore any pending property/geometry changes
     if (pendingChanges) {
-      if (!changes.value.has(group)) changes.value.set(group, new Map());
-      changes.value.get(group)!.set(id, { ...pendingChanges });
+      if (!changes.value.has(entityGroup)) changes.value.set(entityGroup, new Map());
+      changes.value.get(entityGroup)!.set(id, { ...pendingChanges });
     }
     if (pendingGeometryChanges) {
-      if (!geometryChanges.value.has(group)) geometryChanges.value.set(group, new Map());
-      geometryChanges.value.get(group)!.set(id, { ...pendingGeometryChanges });
+      if (!geometryChanges.value.has(entityGroup))
+        geometryChanges.value.set(entityGroup, new Map());
+      geometryChanges.value.get(entityGroup)!.set(id, { ...pendingGeometryChanges });
     }
 
     // Restore tracking state
     if (isNew) {
-      if (!newEntityIds.value.get(group)) newEntityIds.value.set(group, new Set());
-      newEntityIds.value.get(group)!.add(id);
+      if (!newEntityIds.value.get(entityGroup)) newEntityIds.value.set(entityGroup, new Set());
+      newEntityIds.value.get(entityGroup)!.add(id);
     } else {
-      deletedEntityIds.value.get(group)?.delete(id);
+      deletedEntityIds.value.get(entityGroup)?.delete(id);
     }
   }
 
