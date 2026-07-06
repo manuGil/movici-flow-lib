@@ -1,5 +1,4 @@
 <template>
-  <!-- TODO: does this belongs here -->
   <nav class="editor-toolbar is-flex is-align-items-center px-4 py-2">
     <span class="dataset-name is-size-6 has-text-weight-semibold ml-4 mr-auto">
       Editing: {{ datasetDisplayName }}
