@@ -1,7 +1,12 @@
 <template>
-  <div id="mapbox-container">
-    <div id="map" />
-    <canvas id="deckgl-overlay" :style="backgroundColorStyle" @contextmenu.prevent />
+  <div id="mapbox-container" class="mapbox-container">
+    <div ref="mapEl" class="deck-map" />
+    <canvas
+      ref="deckCanvas"
+      class="deck-canvas"
+      :style="backgroundColorStyle"
+      @contextmenu.prevent
+    />
     <div class="map-control map-control-zero" v-if="loaded">
       <slot name="control-zero" v-bind="slotProps" />
     </div>
@@ -105,6 +110,8 @@ const emit = defineEmits<{
 }>();
 const map = ref<mapboxgl.Map>();
 const deck = ref<DeckGL>();
+const mapEl = ref<HTMLDivElement | null>(null);
+const deckCanvas = ref<HTMLCanvasElement | null>(null);
 const eventListeners = ref<Record<DeckEvent, Map<string, DeckEventCallback>>>({
   click: new Map<string, DeckEventCallback>(),
 
@@ -188,7 +195,7 @@ watch(
 
 function initDeck(viewState: ViewState) {
   return new DeckGL({
-    canvas: "deckgl-overlay",
+    canvas: deckCanvas.value ?? undefined,
     width: "100%",
     height: "100%",
     initialViewState: viewState,
@@ -228,7 +235,7 @@ function initMapBox(viewState: ViewState) {
     zoom: viewState.zoom,
     bearing: viewState.bearing,
     pitch: viewState.pitch,
-    container: "map",
+    container: mapEl.value as HTMLElement,
     accessToken: props.accessToken,
     maxPitch: 65,
     style: props.basemap,
@@ -237,6 +244,7 @@ function initMapBox(viewState: ViewState) {
   });
 }
 onMounted(() => {
+  if (!mapEl.value || !deckCanvas.value) return;
   const initialViewState = props.camera?.viewState || DEFAULT_VIEWSTATE;
   map.value = initMapBox(initialViewState);
   map.value.on("load", () => {
@@ -256,10 +264,10 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
-#mapbox-container {
+.mapbox-container {
   width: 100%;
-  & > #map,
-  & > #deckgl-overlay {
+  .deck-map,
+  .deck-canvas {
     position: absolute;
     top: 0;
     left: 0;
