@@ -1,12 +1,12 @@
 import { defaultClient } from "../api/client";
-import { IClient } from "../types";
+import type { IClient } from "../types";
 import { global } from "@/i18n";
 import { defineStore } from "pinia";
 import { type Ref, ref } from "vue";
 import { useSettingsStore } from "./settings";
 import { useSnackbar } from "@movici-flow-lib/baseComposables/useSnackbar";
 import { setClient, setProjections } from "@movici-flow-lib/crs";
-// FIXME: implement solution to handle data with current dataset api
+
 export const useMainStore = defineStore("main", () => {
   const client: Ref<IClient> = ref(
     defaultClient({
