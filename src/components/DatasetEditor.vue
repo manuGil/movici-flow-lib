@@ -3,7 +3,13 @@
     <EditorToolbar />
     <div class="editor-body">
       <div class="editor-map">
-        <Deck ref="deckRef" :layers="layers" :camera="camera" @update:camera="camera = $event">
+        <Deck
+          ref="deckRef"
+          :layers="layers"
+          :camera="camera"
+          :basemap="basemap"
+          @update:camera="camera = $event"
+        >
           <template #control-left="{ onViewstateChange }">
             <MapControlNavigation
               :model-value="camera"
@@ -36,12 +42,18 @@ import MapControlBaseMap from "../components/mapControls/MapControlBaseMap.vue";
 import EditorToolbar from "../components/datasetEditor/EditorToolbar.vue";
 import EditorSidebar from "../components/datasetEditor/EditorSidebar.vue";
 import EditModeToolbar from "../components/datasetEditor/EditModeToolbar.vue";
+import { useReactiveSummary } from "../composables/useReactiveSummary.ts";
 
-// TODO: look for a way to use short or Dataset.
-// CONTINUE HERE
 const props = defineProps<{
   modelValue: ShortDataset;
 }>();
+
+const { currentDataset, datasets } = useReactiveSummary({
+  datasetOnly: true,
+});
+
+console.log("current dataset editor:", currentDataset);
+console.log("datasets editor:", datasets);
 
 const store = useEditorStore();
 
