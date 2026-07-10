@@ -2,15 +2,24 @@ import { computed } from "vue";
 import { EditableGeoJsonLayer, ViewMode, SelectionLayer } from "@deck.gl-community/editable-layers";
 import type { Layer } from "@deck.gl/core";
 import { useEditorStore } from "../stores/editor";
+import { MoviciColors, hexToColorTriple } from "@movici-flow-lib/visualizers/maps/colorMaps";
 
 const VIEW_MODE = new ViewMode();
 
-// TODO: substitute for librabry styles.
 const HIGHLIGHT_COLOR: [number, number, number, number] = [255, 140, 0, 220];
-const DEFAULT_FILL_COLOR: [number, number, number, number] = [70, 130, 180, 180];
-const DEFAULT_LINE_COLOR: [number, number, number, number] = [11, 179, 47, 255];
 const EDIT_HANDLE_COLOR: [number, number, number, number] = [255, 255, 255, 255];
 const EDIT_HANDLE_OUTLINE_COLOR: [number, number, number, number] = [255, 140, 0, 255];
+
+const ENTITY_GROUP_PALETTE = [
+  MoviciColors.GREEN,
+  MoviciColors.BLUE,
+  MoviciColors.RED,
+  MoviciColors.PURPLE,
+  MoviciColors.ORANGE,
+  MoviciColors.YELLOW,
+  MoviciColors.BROWN,
+  MoviciColors.LIGHT_GREY,
+];
 
 export function useEditorlayers() {
   const store = useEditorStore();
@@ -19,7 +28,13 @@ export function useEditorlayers() {
     if (!store.dataset?.data) return [];
 
     const editableLayers: Layer[] = Object.entries(store.dataset.data).map(
-      ([groupName, groupDataRaw]) => {
+      ([groupName, groupDataRaw], idx) => {
+        const [r, g, b] = hexToColorTriple(
+          ENTITY_GROUP_PALETTE[idx % ENTITY_GROUP_PALETTE.length]!,
+        );
+        const groupFillColor: [number, number, number, number] = [r, g, b, 180];
+        const groupLineColor: [number, number, number, number] = [r, g, b, 255];
+
         const groupData = groupDataRaw as Record<string, unknown[]>;
         const ids = (groupData["id"] as number[]) ?? [];
 
@@ -55,15 +70,15 @@ export function useEditorlayers() {
           modeConfig: { formatTooltip: () => "" },
           selectedFeatureIndexes: selectedIndexes,
           pickable: true,
-          // TODO: Check if in-house style can be used here
           getFillColor: ((feature: any, isSelected: boolean) =>
-            isSelected ? HIGHLIGHT_COLOR : DEFAULT_FILL_COLOR) as any,
+            isSelected ? HIGHLIGHT_COLOR : groupFillColor) as any,
           getLineColor: ((feature: any, isSelected: boolean) =>
-            isSelected ? HIGHLIGHT_COLOR : DEFAULT_LINE_COLOR) as any,
+            isSelected ? HIGHLIGHT_COLOR : groupLineColor) as any,
           getLineWidth: 3,
           lineWidthUnits: "pixels",
-          getRadious: 12,
-          pointRadiousUnits: "pixels",
+          getRadius: 6,
+          pointRadiusMinPixels: 4,
+          pointRadiusMaxPixels: 6,
           // Edit Pointer/Handle style
           getEditHandlePointColor: EDIT_HANDLE_COLOR,
           getEditHandlePointOutlineColor: EDIT_HANDLE_OUTLINE_COLOR,
