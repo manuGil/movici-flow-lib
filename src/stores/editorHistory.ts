@@ -1,3 +1,7 @@
+/*
+A store to keep tack changes to a dataset during editing. Enables undo and redo 
+on the dataset editor.
+*/
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import type { GeometryType } from "@movici-flow-lib/utils/geoJsonBridge";
