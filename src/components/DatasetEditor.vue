@@ -52,9 +52,6 @@ const { currentDataset, datasets } = useReactiveSummary({
   datasetOnly: true,
 });
 
-console.log("current dataset editor:", currentDataset);
-console.log("datasets editor:", datasets);
-
 const store = useEditorStore();
 
 const { layers } = useEditorlayers();
