@@ -77,7 +77,7 @@ export function useEditorlayers() {
           getLineWidth: 3,
           lineWidthUnits: "pixels",
           getRadius: 6,
-          pointRadiusMinPixels: 4,
+          pointRadiusMinPixels: 6,
           pointRadiusMaxPixels: 6,
           // Edit Pointer/Handle style
           getEditHandlePointColor: EDIT_HANDLE_COLOR,
@@ -122,7 +122,7 @@ export function useEditorlayers() {
               .filter((id): id is number => id !== undefined);
             store.setMultiSelection(ids);
           },
-          // TODO: Check if in-house style can be used here
+
           getTentativeFillColor: () => [100, 160, 220, 40] as [number, number, number, number],
           getTentativeLineColor: () => [100, 160, 220, 200] as [number, number, number, number],
           lineWidthMinPixels: 1,
