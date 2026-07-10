@@ -342,7 +342,7 @@ export const useEditorStore = defineStore("editor", () => {
     for (const featureIndex of featureIndexes) {
       const feature = updatedFeatures[featureIndex];
       if (!feature) continue;
-      const id = (feature as any).properties?.__ind as number | undefined;
+      const id = (feature as any).properties?.__id as number | undefined;
       if (id === undefined) continue;
 
       const newGeometryColumns = extractGeometryColumns(
@@ -642,7 +642,7 @@ export const useEditorStore = defineStore("editor", () => {
       if (!flowStore.hasCapability(CAPABILITIES.EDITOR)) {
         throw new Error("Dataset patching is not supported by thi backend");
       }
-      if (!flowStore.backend.datasetEditor) {
+      if (!flowStore.backend.datset.patch) {
         throw new Error("Dataset editor service is not configured");
       }
       await flowStore.backend.datasetEditor.patch(datasetUUID.value, patch.value);

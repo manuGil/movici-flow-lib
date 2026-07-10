@@ -1,4 +1,6 @@
-// TODO: Handle transformatios to GeoJson in the front-end, API must provide data in Movici's format.
+/* An utility to do data transformations that enable editing datasets.
+The dataset editor requires data to be in GeoJsonData.
+*/
 
 import {
   transform,
@@ -126,20 +128,20 @@ export function extractGeometryColumns(
   }
 
   if (geomType === "linestring") {
-    const [lon, lat] = geom?.coordinates ?? [0, 0];
-    const [x, y] = reverseTransform([lon, lat], crs);
-    return { "geometry.x": x, "geometry.y": y };
+    const coords: [number, number][] = geom?.coordinates ?? [];
+    const transformed = reverseTransformArray(coords, crs);
+    return { [geomKey]: transformed.map(([x, y]) => [x, y]) };
   }
 
   // Polygon case: GeoJSON stores polygons as [[ring]], for now we are keeping ONLY outter ring. FIXME:
   const rings: [number, number][][] = geom?.coordinates ?? [];
   const outerRing: [number, number][] = rings[0] ?? [];
   const transformed = reverseTransformArray(outerRing, crs);
-  return { [geomKey]: transformed.map((x, y) => [x, y]) };
+  return { [geomKey]: transformed.map(([x, y]) => [x, y]) };
 }
 
 export function computeLineStringLength(coords: number[][]): number {
-  return 0; // TODO: Implement logic to compute the length of a LineString geometry. Check with Pelle if this is needed in the front-end or if it can be computed in the back-end and provided as a property of the feature.
+  return 0; // TODO: See GH issues
 }
 
 export function geomColumnsToWgs84Geometry(

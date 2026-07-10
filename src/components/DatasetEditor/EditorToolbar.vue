@@ -13,7 +13,7 @@
       size="small"
       variant="dark"
       class="mr-1"
-      :disable="historyStore.undoStack.length === 0"
+      :disabled="historyStore.undoStack.length === 0"
       @click="store.undo()"
       title="Undo"
     >
