@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { useFlowStore } from "@movici-flow-lib/stores/flow";
 import { CAPABILITIES } from "@movici-flow-lib/api";
+import { ensureProjection } from "@movici-flow-lib/crs";
 import type { DatasetWithData, DatasetPatch } from "@movici-flow-lib/types";
 import {
   detectGeometryType,
@@ -253,7 +254,11 @@ export const useEditorStore = defineStore("editor", () => {
     return { data, ...(Object.keys(deleted).length > 0 ? { deleted } : {}) };
   });
 
+  // Guards against races when datasets are switched quickly
+  let loadToken = 0;
+
   async function loadDataset(uuid: string) {
+    const token = ++loadToken;
     datasetUUID.value = null;
     dataset.value = null;
     entityGroup.value = null;
@@ -270,14 +275,29 @@ export const useEditorStore = defineStore("editor", () => {
       error.value = "Backend not initialized";
       return;
     }
-    const result = await flowStore.backend?.dataset.getData({ datasetUUID: uuid });
-    if (result) {
-      datasetUUID.value = uuid;
-      dataset.value = result as DatasetWithData;
-      const groups = Object.keys(result.data ?? {});
-      if (groups.length > 0) {
-        entityGroup.value = groups[0] ?? null;
-      }
+    // The editor needs every entity group and attribute, so getData is called
+    // without a filter: the backend must return the full
+    // dataset
+    const result = await flowStore.backend.dataset.getData({ datasetUUID: uuid });
+    // Abandon stale data, if a new call is made while loading data
+    if (token !== loadToken) return;
+    if (!result) {
+      error.value = `Failed to load dataset ${uuid}`;
+      return;
+    }
+    datasetUUID.value = uuid;
+    dataset.value = result as DatasetWithData;
+    const groups = Object.keys(result.data ?? {});
+    if (groups.length > 0) {
+      entityGroup.value = groups[0] ?? null;
+    }
+    // Ensures building WGS84 features is called in the right order
+    try {
+      await ensureProjection(dataset.value.epsg_code);
+      if (token !== loadToken) return;
+      initWgs84Features();
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e);
     }
   }
 
@@ -647,10 +667,8 @@ export const useEditorStore = defineStore("editor", () => {
         throw new Error("Dataset editor service is not configured");
       }
       await flowStore.backend.dataset.patch(datasetUUID.value, patch.value);
-      // Reload datset so dataset.value reflects the saved values
+      // Reload dataset to reflect the saved values
       await loadDataset(datasetUUID.value);
-      // Reinitialize wgs84 features (projection is already loaded)
-      initWgs84Features();
       // Restore selection -> loadDataset resets both to null
       entityGroup.value = savedGroup;
       selectedId.value = savedId;
