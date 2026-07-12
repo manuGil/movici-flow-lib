@@ -262,6 +262,7 @@ export const useEditorStore = defineStore("editor", () => {
     geometryChanges.value = new Map();
     wgs84Features.value = {};
     newEntityIds.value = new Map();
+    deletedEntityIds.value = new Map();
     historyStore.clear();
     error.value = null;
 
@@ -642,10 +643,10 @@ export const useEditorStore = defineStore("editor", () => {
       if (!flowStore.hasCapability(CAPABILITIES.EDITOR)) {
         throw new Error("Dataset patching is not supported by thi backend");
       }
-      if (!flowStore.backend.datset.patch) {
+      if (!flowStore.backend.dataset.patch) {
         throw new Error("Dataset editor service is not configured");
       }
-      await flowStore.backend.datasetEditor.patch(datasetUUID.value, patch.value);
+      await flowStore.backend.dataset.patch(datasetUUID.value, patch.value);
       // Reload datset so dataset.value reflects the saved values
       await loadDataset(datasetUUID.value);
       // Reinitialize wgs84 features (projection is already loaded)
