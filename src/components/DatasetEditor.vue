@@ -33,7 +33,7 @@
 import { onMounted, ref, watch } from "vue";
 import { useEditorStore } from "../stores/editor";
 import { useEditorlayers } from "../composables/useEditorLayer";
-import { ensureProjection, transformBBox } from "../crs";
+import { transformBBox } from "../crs";
 import type { DeckCamera, DeckEventCallback, ShortDataset } from "../types";
 import { useMoviciSettings } from "../baseComposables/useMoviciSettings";
 import Deck from "../components/Deck.vue";
@@ -121,12 +121,11 @@ function padBBox(
 }
 
 async function loadAndInit(uuid: string) {
-  // Only loads a single dataset
+  // Only loads a single dataset. loadDataset also ensures the projection and
+  // builds the wgs84 features.
   await store.loadDataset(uuid);
-  if (store.dataset) {
-    await ensureProjection(store.dataset.epsg_code);
-    store.initWgs84Features();
-  }
+  // If a new dataset is requested while loading: abandon stale camera update.
+  if (props.modelValue.uuid !== uuid) return;
   if (store.boundingBox) {
     const rawBbox = transformBBox(store.boundingBox, store.dataset?.epsg_code);
     const bbox = padBBox(rawBbox);
