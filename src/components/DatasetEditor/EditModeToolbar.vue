@@ -41,7 +41,6 @@ const visibleModes = computed(() => {
 });
 </script>
 
-<!-- TODO: use existing styles or extend current styles -->
 <style scoped lang="scss">
 .edit-mode-toolbar {
   display: flex;
