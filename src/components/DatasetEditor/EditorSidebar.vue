@@ -64,15 +64,31 @@ const modifiedCount = computed(() => {
 
 const generalEnums = computed<Record<string, string[]>>(() => {
   const g = store.dataset?.general as Record<string, unknown> | undefined;
-  const enums = g?.["enums"] as Record<string, string[]> | undefined;
+  // Accept "enums" as a lenient fallback
+  const enums = (g?.["enum"] ?? g?.["enums"]) as Record<string, string[]> | undefined;
   return enums ?? {};
 });
 
 const enumNames = computed<Record<string, string>>(() => {
-  // We need to know which properties map to which enum names, but that is
-  // awailable only in the dataset summary. For now, we match by convention using
-  // a best effort.
-  return {};
+  // enum_name mapping lives in the dataset
+  // summary, which the editor doesn't load.
+  // We apply a Best-effort convention:
+  // an attribute maps to the enum named after its last segment, e.g.
+  // "operational.power_source" -> general.enum["power_source"]
+  // TODO: Review if this approach is generic/reliable enough.
+  const result: Record<string, string> = {};
+  if (!store.entityGroup) return result;
+  const groupData = store.dataset?.data?.[store.entityGroup] as
+    | Record<string, unknown[]>
+    | undefined;
+  if (!groupData) return result;
+  for (const key of Object.keys(groupData)) {
+    const suffix = key.split(".").pop() ?? key;
+    if (generalEnums.value[suffix]) {
+      result[key] = suffix;
+    }
+  }
+  return result;
 });
 
 function onPropertyChange(prop: string, value: unknown) {
