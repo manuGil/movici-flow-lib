@@ -402,16 +402,15 @@ export const useEditorStore = defineStore("editor", () => {
     const geomToApply = isUndo ? cmd.oldGeometryColumns : cmd.newGeometryColumns;
     const epsg = dataset.value?.epsg_code ?? null;
 
-    // Checks if we are restoring the original
+    // Checks if we are restoring the original geometry
     const originalGeom = getOriginalGeomColumns(cmd.entityGroup, cmd.id);
     const isOriginal = JSON.stringify(geomToApply) === JSON.stringify(originalGeom);
 
-    if (!isOriginal) {
-      // Remove from geometry changes
+    if (isOriginal) {
       const groupGeomChanges = geometryChanges.value.get(cmd.entityGroup);
       groupGeomChanges?.delete(cmd.id);
     } else {
-      // update geometry changes
+      //  Record/refresh the pending change
       if (!geometryChanges.value.has(cmd.entityGroup)) {
         geometryChanges.value.set(cmd.entityGroup, new Map());
       }
