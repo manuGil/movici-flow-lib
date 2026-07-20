@@ -79,7 +79,7 @@ export interface DatasetData<T> {
 }
 
 export interface DatasetPatch {
-  data: Record<string, Record<string, unknown[]>>;
+  data: DatasetData<unknown>;
   deleted?: Record<string, number[]>;
 }
 
