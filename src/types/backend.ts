@@ -94,7 +94,6 @@ export interface FetchRequestService {
   ): { url: string; options: RequestInit };
 }
 
-// The dataset editor is gated by "patchDatasets" (exposed as CAPABILITIES.EDITOR).
 export type BackendCapability = "projects" | "geocode" | "user" | "patchDatasets";
 
 export interface Backend {
