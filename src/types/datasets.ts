@@ -78,6 +78,11 @@ export interface DatasetData<T> {
   [entityGroup: string]: EntityGroupData<T>;
 }
 
+export interface DatasetPatch {
+  data: DatasetData<unknown>;
+  deleted?: Record<string, number[]>;
+}
+
 export interface BaseEntityGroup {
   id: number[];
 }

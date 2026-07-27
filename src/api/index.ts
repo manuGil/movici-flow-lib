@@ -4,6 +4,7 @@ export enum CAPABILITIES {
   USER = "user",
   GEOCODE = "geocode",
   PROJECTS = "projects",
+  PATCH_DATASETS = "patchDatasets",
 }
 
 export { Client };
