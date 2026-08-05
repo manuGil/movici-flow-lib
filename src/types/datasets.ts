@@ -84,8 +84,13 @@ export interface PatchEntityGroupData extends BaseEntityGroup {
   [attribute: string]: PatchValue[] | undefined;
 }
 
-export interface DatasetPatch {
+export interface PatchData {
   [entityGroup: string]: PatchEntityGroupData;
+}
+
+export interface DatasetPatch {
+  nulls_overwrite?: boolean;
+  data: PatchData;
 }
 
 export interface BaseEntityGroup {
