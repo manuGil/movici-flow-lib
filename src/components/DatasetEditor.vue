@@ -133,7 +133,6 @@ async function loadAndInit(uuid: string) {
     camera.value = cam;
     initialCamera.value = cam;
   }
-  console.log("loadAddInit successful");
 }
 
 onMounted(async () => {
