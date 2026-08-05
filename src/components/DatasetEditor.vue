@@ -19,6 +19,7 @@
             <MapControlBaseMap :model-value="basemap" @update:model-value="basemap = $event" />
             <EditModeToolbar />
           </template>
+          <!-- Hack to leave click registration 'on' because Deck doesn't provide direct event access-->
           <template #control-zero="{ on }">
             <span ref="deckOnRef" :data-on="registerOn(on)" style="display: none" />
           </template>
