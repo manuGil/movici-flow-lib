@@ -85,7 +85,7 @@
             icon="edit"
             icon-pack="far"
             label="Editor"
-            :disable="!store.hasCapability(CAPABILITIES.EDITOR)"
+            :disable="!store.hasCapability(CAPABILITIES.PATCH_DATASETS)"
           >
             <DatasetEditor v-model="dataset" />
           </o-tab-item>

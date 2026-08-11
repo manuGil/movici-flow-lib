@@ -683,8 +683,8 @@ export const useEditorStore = defineStore("editor", () => {
         if (!flowStore.backend) {
           throw new Error("Backend not initialized");
         }
-        if (!flowStore.hasCapability(CAPABILITIES.EDITOR)) {
-          throw new Error("Dataset patching is not supported by thi backend");
+        if (!flowStore.hasCapability(CAPABILITIES.PATCH_DATASETS)) {
+          throw new Error("Dataset patching is not supported by this backend");
         }
         if (!flowStore.backend.dataset.patch) {
           throw new Error("Dataset editor service is not configured");
