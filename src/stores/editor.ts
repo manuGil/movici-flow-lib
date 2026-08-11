@@ -3,7 +3,7 @@ import { computed, ref } from "vue";
 import { useFlowStore } from "@movici-flow-lib/stores/flow";
 import { CAPABILITIES } from "@movici-flow-lib/api";
 import { ensureProjection } from "@movici-flow-lib/crs";
-import type { DatasetWithData, DatasetPatch } from "@movici-flow-lib/types";
+import type { DatasetWithData, DatasetPatch, PatchData, PatchValue } from "@movici-flow-lib/types";
 import {
   detectGeometryType,
   getGeometryKey,
@@ -214,7 +214,7 @@ export const useEditorStore = defineStore("editor", () => {
 
   const patch = computed<DatasetPatch>(() => {
     // This should be moved, see related issue.
-    const data: Record<string, Record<string, unknown[]>> = {};
+    const data: PatchData = {};
 
     // Collect all entity groups that have changes
     const allGroups = new Set([...changes.value.keys(), ...geometryChanges.value.keys()]);
@@ -228,7 +228,7 @@ export const useEditorStore = defineStore("editor", () => {
       if (allIds.size === 0) continue;
 
       const ids: number[] = [];
-      const propArrays: Record<string, unknown[]> = {};
+      const propArrays: Record<string, PatchValue[]> = {};
 
       for (const id of allIds) {
         ids.push(id);
@@ -238,7 +238,7 @@ export const useEditorStore = defineStore("editor", () => {
 
         for (const [propName, value] of Object.entries(allProps)) {
           if (!propArrays[propName]) propArrays[propName] = [];
-          propArrays[propName].push(value);
+          propArrays[propName].push(value as PatchValue);
         }
       }
       data[entityGroup] = { id: ids, ...propArrays };
