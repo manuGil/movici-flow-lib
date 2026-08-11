@@ -335,8 +335,6 @@ export const useEditorStore = defineStore("editor", () => {
     return { [geometryKey]: (groupData[geometryKey] as unknown[])[index] };
   }
 
-  function syncShapeLength(): void {} // TODO: remove, not necessary
-
   function onGeometryEdit(
     groupName: string,
     updatedFeatures: Feature[],
@@ -398,8 +396,7 @@ export const useEditorStore = defineStore("editor", () => {
     }
   }
 
-  function applyGeometryCommand(cmd: GeometryCommand, isUndo: boolean) {
-    const geomToApply = isUndo ? cmd.oldGeometryColumns : cmd.newGeometryColumns;
+  function applyGeometry(cmd: GeometryCommand, geomToApply: Record<string, unknown>) {
     const epsg = dataset.value?.epsg_code ?? null;
 
     // Checks if we are restoring the original geometry
@@ -581,179 +578,20 @@ export const useEditorStore = defineStore("editor", () => {
     }
   }
 
-  function applyDeleteCommand(cmd: DeleteCommand, isUndo: boolean) {
-    if (isUndo) {
-      restoreEntity(cmd);
+  function undoPropertyChange(cmd: PropertyCommand) {
+    const groupData = dataset.value?.data?.[cmd.entityGroup] as
+      | Record<string, unknown[]>
+      | undefined;
+    const ids: number[] = (groupData?.["id"] as number[]) ?? [];
+    const index = ids.indexOf(cmd.id);
+    const originalValue =
+      index !== -1 ? (groupData?.[cmd.property] as unknown[])?.[index] : undefined;
+
+    if (cmd.oldValue === originalValue) {
+      revertProperty(cmd.entityGroup, cmd.id, cmd.property, true);
     } else {
-      deleteEntity(cmd.entityGroup, cmd.id);
+      updateProperty(cmd.entityGroup, cmd.id, cmd.property, cmd.oldValue, true);
     }
-  }
-
-  function applyCreateCommand(cmd: CreateCommand, isUndo: boolean) {
-    if (isUndo) {
-      // Entity is deleted when undoing a creation
-      deleteEntity(cmd.entityGroup, cmd.id, true);
-    } else {
-      restoreEntity({
-        entityGroup: cmd.entityGroup,
-        id: cmd.id,
-        isNew: true,
-        dataIndex: cmd.dataIndex,
-        rowData: cmd.rowData,
-        wgs84FeatureIndex: cmd.wgs84FeatureIndex,
-        wgs84Feature: cmd.wgs84Feature,
-        pendingGeometryChanges: cmd.geometryColumns,
-      });
-    }
-  }
-
-  function applyCommand(cmd: Command, isUndo: boolean) {
-    if (cmd.kind === "geometry") {
-      applyGeometryCommand(cmd, isUndo);
-      return;
-    }
-    if (cmd.kind === "delete") {
-      applyDeleteCommand(cmd, isUndo);
-      return;
-    }
-    if (cmd.kind === "create") {
-      applyCreateCommand(cmd, isUndo);
-      return;
-    }
-
-    // Property command is the default
-    const propCmd = cmd as PropertyCommand;
-    if (isUndo) {
-      const groupData = dataset.value?.data?.[propCmd.entityGroup] as
-        | Record<string, unknown[]>
-        | undefined;
-      const ids: number[] = (groupData?.["id"] as number[]) ?? [];
-      const index = ids.indexOf(propCmd.id);
-      const originalValue =
-        index !== -1 ? (groupData?.[propCmd.property] as unknown[])?.[index] : undefined;
-      if (propCmd.oldValue === originalValue) {
-        revertProperty(propCmd.entityGroup, propCmd.id, propCmd.property, true);
-      } else {
-        updateProperty(propCmd.entityGroup, propCmd.id, propCmd.property, propCmd.oldValue, true);
-      }
-    } else {
-      updateProperty(propCmd.entityGroup, propCmd.id, propCmd.property, propCmd.newValue, true);
-    }
-  }
-
-  function undo() {
-    historyStore.undo(applyCommand);
-  }
-  function redo() {
-    historyStore.redo(applyCommand);
-  }
-
-  async function save() {
-    if (!datasetUUID.value || !isDirty.value) return;
-    saving.value = true;
-    error.value = null;
-    // Preserve selection so the property panel stays open after reload
-    const savedGroup = entityGroup.value;
-    const savedId = selectedId.value;
-    try {
-      if (!flowStore.backend) {
-        throw new Error("Backend not initialized");
-      }
-      if (!flowStore.hasCapability(CAPABILITIES.EDITOR)) {
-        throw new Error("Dataset patching is not supported by thi backend");
-      }
-      if (!flowStore.backend.dataset.patch) {
-        throw new Error("Dataset editor service is not configured");
-      }
-      await flowStore.backend.dataset.patch(datasetUUID.value, patch.value);
-      // Reload dataset to reflect the saved values
-      await loadDataset(datasetUUID.value);
-      // Restore selection -> loadDataset resets both to null
-      entityGroup.value = savedGroup;
-      selectedId.value = savedId;
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : String(e);
-    } finally {
-      saving.value = false;
-    }
-  }
-
-  function addEntity(groupName: string, newFeature: Feature, epsg: number | null): void {
-    const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
-    if (!groupData) return;
-
-    const geometryType = detectGeometryType(groupData);
-    if (!geometryType) return;
-    const geometryKey = getGeometryKey(groupData, geometryType);
-
-    // Generate a unit Id (by using the max of existing ids + 1).
-    const ids = (groupData["id"] as number[]) ?? [];
-    const newId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
-
-    // extract geometry ind dataset CRS
-    const geomColumns = extractGeometryColumns(newFeature as any, geometryType, geometryKey, epsg);
-
-    // record positions before inserting (for undo purposes)
-    const dataIndex = ids.length; // will be appended at this index
-    const wgs84FeatureIndex = (wgs84Features.value[groupName] ?? []).length; // will be appended at this index
-
-    // Add new row to dataset columnar data
-    (groupData["id"] as number[]).push(newId);
-    for (const key of Object.keys(groupData)) {
-      if (key === "id") continue;
-      const geomValue = geomColumns[key];
-      (groupData[key] as unknown[]).push(geomValue !== undefined ? geomValue : null);
-    }
-
-    // Update wgs84Features with the correct Id in properties
-    const newFeatureWithId = {
-      ...newFeature,
-      properties: {
-        ...(newFeature.properties ?? {}),
-        __id: newId,
-      },
-    };
-    const currentFeature = wgs84Features.value[groupName] ?? [];
-    wgs84Features.value = {
-      ...wgs84Features.value,
-      [groupName]: [...currentFeature, newFeatureWithId],
-    };
-
-    // track geometry as changed
-    if (!geometryChanges.value.has(groupName)) {
-      geometryChanges.value.set(groupName, new Map());
-    }
-    geometryChanges.value.get(groupName)!.set(newId, { ...geomColumns });
-
-    // track as new entity
-    if (!newEntityIds.value.has(groupName)) {
-      newEntityIds.value.set(groupName, new Set());
-    }
-    newEntityIds.value.get(groupName)!.add(newId);
-
-    //Build the rowData snapshot for undo (all columns for this new entity)
-    const rowData: Record<string, unknown> = {};
-    for (const key of Object.keys(groupData)) {
-      const arr = groupData[key] as unknown[];
-      rowData[key] = arr[arr.length - 1]; // the value just pushed
-    }
-
-    // Push to history so the draw action can be undone
-    historyStore.push({
-      kind: "create",
-      entityGroup: groupName,
-      id: newId,
-      dataIndex,
-      rowData,
-      wgs84FeatureIndex,
-      wgs84Feature: newFeatureWithId,
-      geometryColumns: { ...geomColumns },
-    } as CreateCommand);
-
-    // Select the new enity and switch back to the view mode
-    entityGroup.value = groupName;
-    selectedId.value = newId;
-    editModeKey.value = "view";
   }
 
   function deleteEntity(groupName: string, id: number, skipHistory = false): void {
@@ -786,6 +624,165 @@ export const useEditorStore = defineStore("editor", () => {
       for (const key of Object.keys(groupData)) {
         (groupData[key] as unknown[]).splice(dataIndex, 1);
       }
+    }
+
+    function createdEntitySnapshot(cmd: CreateCommand) {
+      return {
+        entityGroup: cmd.entityGroup,
+        id: cmd.id,
+        isNew: true,
+        dataIndex: cmd.dataIndex,
+        rowData: cmd.rowData,
+        wgs84FeatureIndex: cmd.wgs84FeatureIndex,
+        wgs84Feature: cmd.wgs84Feature,
+        pendingGeometryChanges: cmd.geometryColumns,
+      };
+    }
+
+    function undoCommand(cmd: Command) {
+      switch (cmd.kind) {
+        case "property":
+          return undoPropertyChange(cmd);
+        case "geometry":
+          return applyGeometry(cmd, cmd.oldGeometryColumns);
+        case "delete":
+          return restoreEntity(cmd);
+        case "create":
+          return deletedEntityIds(cmd.entityGroup, cmd.id, true);
+      }
+    }
+
+    function redoCommand(cmd: Command) {
+      switch (cmd.kind) {
+        case "property":
+          return updateProperty(cmd.entityGroup, cmd.id, cmd.property, cmd.newValue, true);
+        case "geometry":
+          return applyGeometry(cmd, cmd.newGeometryColums);
+        case "delete":
+          return deleteEntity(cmd.entityGroup, cmd.id);
+        case "create":
+          return restoreEntity(createdEntitySnapshot(cmd));
+      }
+    }
+
+    function undo() {
+      historyStore.undo(undoCommand);
+    }
+    function redo() {
+      historyStore.redo(redoCommand);
+    }
+
+    async function save() {
+      if (!datasetUUID.value || !isDirty.value) return;
+      saving.value = true;
+      error.value = null;
+      // Preserve selection so the property panel stays open after reload
+      const savedGroup = entityGroup.value;
+      const savedId = selectedId.value;
+      try {
+        if (!flowStore.backend) {
+          throw new Error("Backend not initialized");
+        }
+        if (!flowStore.hasCapability(CAPABILITIES.EDITOR)) {
+          throw new Error("Dataset patching is not supported by thi backend");
+        }
+        if (!flowStore.backend.dataset.patch) {
+          throw new Error("Dataset editor service is not configured");
+        }
+        await flowStore.backend.dataset.patch(datasetUUID.value, patch.value);
+        // Reload dataset to reflect the saved values
+        await loadDataset(datasetUUID.value);
+        // Restore selection -> loadDataset resets both to null
+        entityGroup.value = savedGroup;
+        selectedId.value = savedId;
+      } catch (e) {
+        error.value = e instanceof Error ? e.message : String(e);
+      } finally {
+        saving.value = false;
+      }
+    }
+
+    function addEntity(groupName: string, newFeature: Feature, epsg: number | null): void {
+      const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
+      if (!groupData) return;
+
+      const geometryType = detectGeometryType(groupData);
+      if (!geometryType) return;
+      const geometryKey = getGeometryKey(groupData, geometryType);
+
+      // Generate a unit Id (by using the max of existing ids + 1).
+      const ids = (groupData["id"] as number[]) ?? [];
+      const newId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
+
+      // extract geometry ind dataset CRS
+      const geomColumns = extractGeometryColumns(
+        newFeature as any,
+        geometryType,
+        geometryKey,
+        epsg,
+      );
+
+      // record positions before inserting (for undo purposes)
+      const dataIndex = ids.length; // will be appended at this index
+      const wgs84FeatureIndex = (wgs84Features.value[groupName] ?? []).length; // will be appended at this index
+
+      // Add new row to dataset columnar data
+      (groupData["id"] as number[]).push(newId);
+      for (const key of Object.keys(groupData)) {
+        if (key === "id") continue;
+        const geomValue = geomColumns[key];
+        (groupData[key] as unknown[]).push(geomValue !== undefined ? geomValue : null);
+      }
+
+      // Update wgs84Features with the correct Id in properties
+      const newFeatureWithId = {
+        ...newFeature,
+        properties: {
+          ...(newFeature.properties ?? {}),
+          __id: newId,
+        },
+      };
+      const currentFeature = wgs84Features.value[groupName] ?? [];
+      wgs84Features.value = {
+        ...wgs84Features.value,
+        [groupName]: [...currentFeature, newFeatureWithId],
+      };
+
+      // track geometry as changed
+      if (!geometryChanges.value.has(groupName)) {
+        geometryChanges.value.set(groupName, new Map());
+      }
+      geometryChanges.value.get(groupName)!.set(newId, { ...geomColumns });
+
+      // track as new entity
+      if (!newEntityIds.value.has(groupName)) {
+        newEntityIds.value.set(groupName, new Set());
+      }
+      newEntityIds.value.get(groupName)!.add(newId);
+
+      //Build the rowData snapshot for undo (all columns for this new entity)
+      const rowData: Record<string, unknown> = {};
+      for (const key of Object.keys(groupData)) {
+        const arr = groupData[key] as unknown[];
+        rowData[key] = arr[arr.length - 1]; // the value just pushed
+      }
+
+      // Push to history so the draw action can be undone
+      historyStore.push({
+        kind: "create",
+        entityGroup: groupName,
+        id: newId,
+        dataIndex,
+        rowData,
+        wgs84FeatureIndex,
+        wgs84Feature: newFeatureWithId,
+        geometryColumns: { ...geomColumns },
+      } as CreateCommand);
+
+      // Select the new enity and switch back to the view mode
+      entityGroup.value = groupName;
+      selectedId.value = newId;
+      editModeKey.value = "view";
     }
 
     // Remove the feature from wgs84Features

@@ -63,17 +63,17 @@ export const useEditorHistoryStore = defineStore("editorHistory", () => {
     redoStack.value = []; // clear redo stack on new action
   }
 
-  function undo(applyFn: (cmd: Command, isUndo: boolean) => void) {
+  function undo(apply: (cmd: Command) => void) {
     const cmd = undoStack.value.pop();
     if (!cmd) return;
-    applyFn(cmd, true);
+    apply(cmd);
     redoStack.value.push(cmd);
   }
 
-  function redo(applyFn: (cmd: Command, isUndo: boolean) => void) {
+  function redo(apply: (cmd: Command) => void) {
     const cmd = redoStack.value.pop();
     if (!cmd) return;
-    applyFn(cmd, false);
+    apply(cmd);
     undoStack.value.push(cmd);
   }
 
