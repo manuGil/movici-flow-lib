@@ -657,7 +657,7 @@ export const useEditorStore = defineStore("editor", () => {
         case "property":
           return updateProperty(cmd.entityGroup, cmd.id, cmd.property, cmd.newValue, true);
         case "geometry":
-          return applyGeometry(cmd, cmd.newGeometryColums);
+          return applyGeometry(cmd, cmd.newGeometryColumns);
         case "delete":
           return deleteEntity(cmd.entityGroup, cmd.id);
         case "create":
@@ -866,7 +866,6 @@ export const useEditorStore = defineStore("editor", () => {
     loadDataset,
     initWgs84Features,
     onGeometryEdit,
-    addEntity,
     deleteEntity,
     setEditMode,
     setMultiSelection,
@@ -875,9 +874,6 @@ export const useEditorStore = defineStore("editor", () => {
     clearSelection,
     updateProperty,
     revertProperty,
-    undo,
-    redo,
-    save,
     clearChanges,
   };
 });
