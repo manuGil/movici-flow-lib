@@ -657,7 +657,7 @@ export const useEditorStore = defineStore("editor", () => {
         case "property":
           return updateProperty(cmd.entityGroup, cmd.id, cmd.property, cmd.newValue, true);
         case "geometry":
-          return applyGeometry(cmd, cmd.newGeometryColums);
+          return applyGeometry(cmd, cmd.newGeometryColumns);
         case "delete":
           return deleteEntity(cmd.entityGroup, cmd.id);
         case "create":
@@ -683,8 +683,8 @@ export const useEditorStore = defineStore("editor", () => {
         if (!flowStore.backend) {
           throw new Error("Backend not initialized");
         }
-        if (!flowStore.hasCapability(CAPABILITIES.EDITOR)) {
-          throw new Error("Dataset patching is not supported by thi backend");
+        if (!flowStore.hasCapability(CAPABILITIES.PATCH_DATASETS)) {
+          throw new Error("Dataset patching is not supported by this backend");
         }
         if (!flowStore.backend.dataset.patch) {
           throw new Error("Dataset editor service is not configured");
@@ -866,7 +866,6 @@ export const useEditorStore = defineStore("editor", () => {
     loadDataset,
     initWgs84Features,
     onGeometryEdit,
-    addEntity,
     deleteEntity,
     setEditMode,
     setMultiSelection,
@@ -875,9 +874,6 @@ export const useEditorStore = defineStore("editor", () => {
     clearSelection,
     updateProperty,
     revertProperty,
-    undo,
-    redo,
-    save,
     clearChanges,
   };
 });
