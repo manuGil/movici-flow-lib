@@ -40,9 +40,9 @@ import { useMoviciSettings } from "../baseComposables/useMoviciSettings";
 import Deck from "../components/Deck.vue";
 import MapControlNavigation from "../components/mapControls/MapControlNavigation.vue";
 import MapControlBaseMap from "../components/mapControls/MapControlBaseMap.vue";
-import EditorToolbar from "./datasetEditor/EditorToolbar.vue";
-import EditorSidebar from "./datasetEditor/EditorSidebar.vue";
-import EditModeToolbar from "./datasetEditor/EditModeToolbar.vue";
+import EditorToolbar from "./DatasetEditor/EditorToolbar.vue";
+import EditorSidebar from "./DatasetEditor/EditorSidebar.vue";
+import EditModeToolbar from "./DatasetEditor/EditModeToolbar.vue";
 import { useReactiveSummary } from "../composables/useReactiveSummary.ts";
 
 const props = defineProps<{
