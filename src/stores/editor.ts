@@ -3,7 +3,13 @@ import { computed, ref } from "vue";
 import { useFlowStore } from "@movici-flow-lib/stores/flow";
 import { CAPABILITIES } from "@movici-flow-lib/api";
 import { ensureProjection } from "@movici-flow-lib/crs";
-import type { DatasetWithData, DatasetPatch, PatchData, PatchValue } from "@movici-flow-lib/types";
+import type {
+  DatasetWithData,
+  DatasetPatch,
+  PatchData,
+  PatchValue,
+  PatchEntityGroupData,
+} from "@movici-flow-lib/types";
 import {
   detectGeometryType,
   getGeometryKey,
@@ -217,41 +223,45 @@ export const useEditorStore = defineStore("editor", () => {
     const data: PatchData = {};
 
     // Collect all entity groups that have changes
-    const allGroups = new Set([...changes.value.keys(), ...geometryChanges.value.keys()]);
+    const allGroups = new Set([
+      ...changes.value.keys(),
+      ...geometryChanges.value.keys(),
+      ...deletedEntityIds.value.keys(),
+    ]);
 
     for (const entityGroup of allGroups) {
-      const propChanges = changes.value.get(entityGroup) ?? new Map();
-      const geomChanges = geometryChanges.value.get(entityGroup) ?? new Map();
+      const propChanges =
+        changes.value.get(entityGroup) ?? new Map<number, Record<string, unknown>>();
+      const geomChanges =
+        geometryChanges.value.get(entityGroup) ?? new Map<number, Record<string, unknown>>();
+      const deletedIds = deletedEntityIds.value.get(entityGroup) ?? new Set<number>();
+      const editedIds = new Set([...propChanges.keys(), ...geomChanges.keys()]);
+      // Collects IDs of edited entities firts, then IDs of deleted entities.
+      const allIds = [...editedIds, ...deletedIds];
+      if (allIds.length === 0) continue;
 
-      // Collect all entity IDs that have any change
-      const allIds = new Set([...propChanges.keys(), ...geomChanges.keys()]);
-      if (allIds.size === 0) continue;
-
-      const ids: number[] = [];
-      const propArrays: Record<string, PatchValue[]> = {};
-
-      for (const id of allIds) {
-        ids.push(id);
-        const props = propChanges.get(id) ?? {};
-        const geoms = geomChanges.get(id) ?? {};
-        const allProps = { ...props, ...geoms };
-
-        for (const [propName, value] of Object.entries(allProps)) {
-          if (!propArrays[propName]) propArrays[propName] = [];
-          propArrays[propName].push(value as PatchValue);
-        }
+      const touchedProps = new Set<string>();
+      for (const entityChanges of [...propChanges.values(), ...geomChanges.values()]) {
+        for (const prop of Object.keys(entityChanges)) touchedProps.add(prop);
       }
-      data[entityGroup] = { id: ids, ...propArrays };
-    }
 
-    // Collect deletions for pre-existing entities. New entities that are created and deleted within the same editing session don't need to be sent as they don't exist in the back-end.
-    const deleted: Record<string, number[]> = {};
-    for (const [entityGroup, ids] of deletedEntityIds.value.entries()) {
-      if (ids.size > 0) {
-        deleted[entityGroup] = Array.from(ids);
+      const group = (PatchEntityGroupData = { id: allIds });
+
+      for (const prop of touchedProps) {
+        group[prop] = allIds.map((id) => {
+          const pending = { ...propChanges.get(id), ...geomChanges.get(id) };
+          if (prop in pending) return pending[prop] as PatchValue;
+          return getCurrentValue(entityGroup, id, prop);
+        });
       }
+
+      if (deletedIds.size > 0) {
+        group.deleted = allIds.map((id) => deletedIds.has(id));
+      }
+
+      data[entityGroup] = group;
     }
-    return { data, ...(Object.keys(deleted).length > 0 ? { deleted } : {}) };
+    return { nulls_overwrite: true, data };
   });
 
   // Guards against races when datasets are switched quickly
@@ -314,6 +324,14 @@ export const useEditorStore = defineStore("editor", () => {
       result[groupName] = fc.features;
     }
     wgs84Features.value = result;
+  }
+
+  function getCurrentValue(groupName: string, id: number, prop: string): PatchValue {
+    const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
+    const ids = (groupData?.["id"] as number[]) ?? [];
+    const index = ids.indexOf(id);
+    if (index === -1) return null;
+    return ((groupData?.[prop] as unknown[])?.[index] ?? null) as PatchValue;
   }
 
   function getOriginalGeomColumns(groupName: string, id: number): Record<string, unknown> {
