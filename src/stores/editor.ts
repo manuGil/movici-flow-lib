@@ -245,7 +245,7 @@ export const useEditorStore = defineStore("editor", () => {
         for (const prop of Object.keys(entityChanges)) touchedProps.add(prop);
       }
 
-      const group = (PatchEntityGroupData = { id: allIds });
+      const group: PatchEntityGroupData = { id: allIds };
 
       for (const prop of touchedProps) {
         group[prop] = allIds.map((id) => {
