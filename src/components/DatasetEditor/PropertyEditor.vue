@@ -84,6 +84,11 @@ const emit = defineEmits<{
 
 const store = useEditorStore();
 
+const isNewEntity = conputed(() => {
+  if (!props.entityGroup || store.selectedId === null) return false;
+  return store.newIntityIds.get(props.entityGroup)?.has(store.selectedId) ?? false;
+});
+
 const editableProperties = computed(() => {
   if (!props.entity) return {};
   const result: Record<string, unknown> = {};
@@ -126,6 +131,7 @@ function inputKind(key: string): "enum" | "boolean" | "number" | "readonly" | "t
 }
 
 function displayValue(key: string): string {
+  if (key == "id" && isNewEntity.value) return ""; // new entities get an Id from the backend.
   const v = currentValue(key);
   return v === null || v === undefined ? "" : String(v);
 }
