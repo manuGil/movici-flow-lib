@@ -84,7 +84,7 @@ const emit = defineEmits<{
 
 const store = useEditorStore();
 
-const isNewEntity = conputed(() => {
+const isNewEntity = computed(() => {
   if (!props.entityGroup || store.selectedId === null) return false;
   return store.newIntityIds.get(props.entityGroup)?.has(store.selectedId) ?? false;
 });
