@@ -125,6 +125,11 @@ export const useEditorStore = defineStore("editor", () => {
     return row;
   });
 
+  const selectedIsNew = computed(() => {
+    if (!entityGroup.value || selectedId.value === null) return false;
+    return newEntityIds.value.get(entityGroup.value)?.has(selectedId.value) ?? false;
+  });
+
   // Bouding box [minX, minY, maxX, maxY] in the dataset CRS from geometry columns.
   // It handles point (geometry.x/y), line (geometry.linestring_2d/3d) and polygon.
 
@@ -887,6 +892,7 @@ export const useEditorStore = defineStore("editor", () => {
     setMultiSelection,
     selectEntityGroup,
     selectEntity,
+    selectedIsNew,
     clearSelection,
     updateProperty,
     revertProperty,

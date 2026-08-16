@@ -131,7 +131,7 @@ function inputKind(key: string): "enum" | "boolean" | "number" | "readonly" | "t
 }
 
 function displayValue(key: string): string {
-  if (key == "id" && isNewEntity.value) return ""; // new entities get an Id from the backend.
+  if (key == "id" && isNewEntity.value) return "-"; // new entities get an Id from the backend.
   const v = currentValue(key);
   return v === null || v === undefined ? "" : String(v);
 }
