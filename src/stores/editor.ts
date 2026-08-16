@@ -227,6 +227,7 @@ export const useEditorStore = defineStore("editor", () => {
       ...changes.value.keys(),
       ...geometryChanges.value.keys(),
       ...deletedEntityIds.value.keys(),
+      ...newEntityIds.value.keys(),
     ]);
 
     for (const entityGroup of allGroups) {
@@ -235,7 +236,8 @@ export const useEditorStore = defineStore("editor", () => {
       const geomChanges =
         geometryChanges.value.get(entityGroup) ?? new Map<number, Record<string, unknown>>();
       const deletedIds = deletedEntityIds.value.get(entityGroup) ?? new Set<number>();
-      const editedIds = new Set([...propChanges.keys(), ...geomChanges.keys()]);
+      const newIds = newEntityIds.value.get(entityGroup) ?? new Set<number>();
+      const editedIds = new Set([...propChanges.keys(), ...geomChanges.keys(), ...newIds]);
       // Collects IDs of edited entities firts, then IDs of deleted entities.
       const allIds = [...editedIds, ...deletedIds];
       if (allIds.length === 0) continue;
@@ -245,7 +247,7 @@ export const useEditorStore = defineStore("editor", () => {
         for (const prop of Object.keys(entityChanges)) touchedProps.add(prop);
       }
 
-      const group: PatchEntityGroupData = { id: allIds };
+      const group: PatchEntityGroupData = { id: allIds.map((id) => (newIds.has(id) ? -1 : id)) };
 
       for (const prop of touchedProps) {
         group[prop] = allIds.map((id) => {
@@ -418,8 +420,9 @@ export const useEditorStore = defineStore("editor", () => {
     const epsg = dataset.value?.epsg_code ?? null;
 
     // Checks if we are restoring the original geometry
+    const isNew = newEntityIds.value.get(cmd.entityGroup)?.has(cmd.id) ?? false;
     const originalGeom = getOriginalGeomColumns(cmd.entityGroup, cmd.id);
-    const isOriginal = JSON.stringify(geomToApply) === JSON.stringify(originalGeom);
+    const isOriginal = !isNew && JSON.stringify(geomToApply) === JSON.stringify(originalGeom);
 
     if (isOriginal) {
       const groupGeomChanges = geometryChanges.value.get(cmd.entityGroup);
