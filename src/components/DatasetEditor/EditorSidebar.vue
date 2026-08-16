@@ -24,7 +24,9 @@
     <div class="sidebar-content p-3">
       <div v-if="store.selectedId !== null" class="mb-2">
         <span class="is-size-7 has-text-grey">Entity ID: </span>
-        <span class="is-size-7 has-text-weight-bold">{{ store.selectedId }} </span>
+        <span class="is-size-7 has-text-weight-bold"
+          >{{ store.selectedIsNew ? "-" : store.selectedId }}
+        </span>
       </div>
       <PropertyEditor
         :entity="store.selectedEntity"
