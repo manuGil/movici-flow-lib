@@ -86,7 +86,7 @@ const store = useEditorStore();
 
 const isNewEntity = computed(() => {
   if (!props.entityGroup || store.selectedId === null) return false;
-  return store.newIntityIds.get(props.entityGroup)?.has(store.selectedId) ?? false;
+  return store.newEntityIds.get(props.entityGroup)?.has(store.selectedId) ?? false;
 });
 
 const editableProperties = computed(() => {
