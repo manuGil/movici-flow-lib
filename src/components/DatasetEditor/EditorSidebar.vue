@@ -14,6 +14,25 @@
           </option>
         </o-select>
       </o-field>
+      <o-field label="New entity group" label-class="is-size-7" class="mt-2 mb-0">
+        <div class="is-flex is-align-items-center add-row">
+          <o-input
+            v-model="newGroupName"
+            size="small"
+            placeholder="entities"
+            expanded
+            :disable="!store.dataset"
+            @keyup.enter="onAddEntityGroup"
+          />
+          <o-select v-model="newGroupGeometry" size="small">
+            <option value="point">point</option>
+            <option value="linestring">line</option>
+            <option value="polygon">polygon</option>
+          </o-select>
+          <o-button size="small" :disable="!canAddGroup" @click="onAddEntityGroup">Add</o-button>
+        </div>
+      </o-field>
+      <p v-if="addGroupError" class="is-size-7 has-text-dange mt-1">{{ addGroupError }}</p>
       <div class="is-size-7 has-text-grey mt-1">
         {{ entityCount }} entiies
         <span v-if="modifiedCount > 0" class="has-test-warning-dark ml-2">
@@ -21,7 +40,7 @@
         </span>
       </div>
       <o-field label="New attribute" label-class="is-size-7" class="mt-2 mb-0">
-        <div class="is-flex is-align-items-center attribute-add-row">
+        <div class="is-flex is-align-items-center add-row">
           <o-input
             v-model="newAttrName"
             size="small"
@@ -58,7 +77,7 @@
 import { computed, ref } from "vue";
 import { useEditorStore } from "@movici-flow-lib/stores/editor";
 import PropertyEditor from "./PropertyEditor.vue";
-
+import type { GeometryType } from "@movici-flow-lib/utils/geoJsonBridge";
 const store = useEditorStore();
 
 const selectedGroup = computed({
@@ -82,6 +101,23 @@ function onAddAttribute() {
     addAttrError.value = null;
   } else {
     addAttrError.value = `Cannot add attribute '${name}': name is reseved or already exists'`;
+  }
+}
+
+const newGroupName = ref("");
+const newGroupGeometry = ref<GeometryType>("point");
+const addGroupError = ref<string | null>(null);
+
+const canAddGroup = computed(() => !!store.dataset?.data && newGroupName.value.trim().length > 0);
+
+function onAddEntityGroup() {
+  if (!canAddGroup.value) return;
+  const name = newGroupName.value.trim();
+  if (store.onAddEntityGroup(name, newGroupGeometry.value)) {
+    newGroupName.value = "";
+    addGroupError.value = null;
+  } else {
+    addGroupError.value = `Cannot add entitty group '${name}': it already exists`;
   }
 }
 
@@ -148,7 +184,7 @@ function onPropertyChange(prop: string, value: unknown) {
     flex: 1;
     overflow-y: auto;
   }
-  .attribute-add-row {
+  .add-row {
     gap: 0.25rem;
   }
 }
