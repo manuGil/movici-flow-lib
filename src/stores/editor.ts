@@ -235,6 +235,13 @@ export const useEditorStore = defineStore("editor", () => {
       ...newEntityIds.value.keys(),
     ]);
 
+    let hasClears = false;
+    for (const groupChanges of changes.value.values()) {
+      for (const entityChanges of groupChanges.values()) {
+        if (Object.values(entityChanges).some((v) => v === null)) hasClears = true;
+      }
+    }
+
     for (const entityGroup of allGroups) {
       const propChanges =
         changes.value.get(entityGroup) ?? new Map<number, Record<string, unknown>>();
@@ -259,7 +266,7 @@ export const useEditorStore = defineStore("editor", () => {
           if (deletedIds.has(id)) return null;
           const pending = { ...propChanges.get(id), ...geomChanges.get(id) };
           if (prop in pending) return pending[prop] as PatchValue;
-          return getCurrentValue(entityGroup, id, prop);
+          return hasClears ? getCurrentValue(entityGroup, id, prop) : null;
         });
       }
 
@@ -269,7 +276,7 @@ export const useEditorStore = defineStore("editor", () => {
 
       data[entityGroup] = group;
     }
-    return { nulls_overwrite: true, data };
+    return { nulls_overwrite: hasClears, data };
   });
 
   // Guards against races when datasets are switched quickly
