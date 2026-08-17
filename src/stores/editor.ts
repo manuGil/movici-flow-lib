@@ -13,11 +13,11 @@ import type {
 import {
   detectGeometryType,
   getGeometryKey,
-  GeometryType,
   groupToFeatureCollection,
   extractGeometryColumns,
   geomColumnsToWgs84Geometry,
 } from "@movici-flow-lib/utils/geoJsonBridge";
+import type { GeometryType } from "@movici-flow-lib/utils/geoJsonBridge";
 import {
   ViewMode,
   ModifyMode,
@@ -948,6 +948,7 @@ export const useEditorStore = defineStore("editor", () => {
     onGeometryEdit,
     addEntity,
     addAttribute,
+    addEntityGroup,
     deleteEntity,
     setEditMode,
     setMultiSelection,
