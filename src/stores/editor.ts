@@ -17,6 +17,7 @@ import {
   extractGeometryColumns,
   geomColumnsToWgs84Geometry,
 } from "@movici-flow-lib/utils/geoJsonBridge";
+import type { GeometryType } from "@movici-flow-lib/utils/geoJsonBridge";
 import {
   ViewMode,
   ModifyMode,
