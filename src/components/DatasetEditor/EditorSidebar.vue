@@ -78,6 +78,7 @@ import { computed, ref } from "vue";
 import { useEditorStore } from "@movici-flow-lib/stores/editor";
 import PropertyEditor from "./PropertyEditor.vue";
 import type { GeometryType } from "@movici-flow-lib/utils/geoJsonBridge";
+
 const store = useEditorStore();
 
 const selectedGroup = computed({
@@ -113,7 +114,7 @@ const canAddGroup = computed(() => !!store.dataset?.data && newGroupName.value.t
 function onAddEntityGroup() {
   if (!canAddGroup.value) return;
   const name = newGroupName.value.trim();
-  if (store.onAddEntityGroup(name, newGroupGeometry.value)) {
+  if (store.addEntityGroup(name, newGroupGeometry.value)) {
     newGroupName.value = "";
     addGroupError.value = null;
   } else {

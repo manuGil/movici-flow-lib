@@ -13,7 +13,6 @@ import type {
 import {
   detectGeometryType,
   getGeometryKey,
-  GeometryType,
   groupToFeatureCollection,
   extractGeometryColumns,
   geomColumnsToWgs84Geometry,
@@ -948,6 +947,7 @@ export const useEditorStore = defineStore("editor", () => {
     onGeometryEdit,
     addEntity,
     addAttribute,
+    addEntityGroup,
     deleteEntity,
     setEditMode,
     setMultiSelection,
