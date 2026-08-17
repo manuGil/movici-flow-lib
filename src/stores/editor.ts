@@ -13,6 +13,7 @@ import type {
 import {
   detectGeometryType,
   getGeometryKey,
+  GeometryType,
   groupToFeatureCollection,
   extractGeometryColumns,
   geomColumnsToWgs84Geometry,
@@ -806,13 +807,13 @@ export const useEditorStore = defineStore("editor", () => {
 
   const newEntityGroups = ref<Set<string>>(new Set());
 
-  const GEOMETRY_COLUMS: Record<geometryType, string[]> = {
+  const GEOMETRY_COLUMS: Record<GeometryType, string[]> = {
     point: ["geometry.x", "geometry.y"],
     linestring: ["geometry.linestring_2d"],
     polygon: ["geometry.polygon"],
   };
 
-  function addEntityGroup(name: string, geometryType: geometryType): boolean {
+  function addEntityGroup(name: string, geometryType: GeometryType): boolean {
     const data = dataset.value?.data as Record<string, Record<string, unknown[]>> | undefined;
     const groupName = name.trim();
     if (!data || !groupName || groupName in data) return false;
