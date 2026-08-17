@@ -293,6 +293,7 @@ export const useEditorStore = defineStore("editor", () => {
     wgs84Features.value = {};
     newEntityIds.value = new Map();
     deletedEntityIds.value = new Map();
+    newAttributeTypes.value = new Map();
     historyStore.clear();
     error.value = null;
 
@@ -782,6 +783,27 @@ export const useEditorStore = defineStore("editor", () => {
     editModeKey.value = "view";
   }
 
+  const newAttributeTypes = ref<Map<string, Map<string, "number" | "boolena" | "string">>>(
+    new Map(),
+  ); // TODO: move to types?
+
+  function addAttribute(
+    groupName: string,
+    name: string,
+    type: "number" | "boolean" | "string",
+  ): boolean {
+    const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
+    const attr = name.trim();
+    if (!groupData || !attr || attr === "id" || attr === "deleted" || attr.startsWith("geometry."))
+      return false;
+    if (attr in groupData) return false;
+    const size = (groupData["id"] as unknown[])?.length ?? 0;
+    groupData[attr] = new Array(size).fill(null);
+    if (!newAttributeTypes.value.has(groupName)) newAttributeTypes.value.set(groupName, new Map());
+    newAttributeTypes.value.get(groupName)!.set(attr, type);
+    return true;
+  }
+
   function deleteEntity(groupName: string, id: number, skipHistory = false): void {
     // Capture snapshot before mutating (necessary for undo functionality)
     const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
@@ -867,6 +889,12 @@ export const useEditorStore = defineStore("editor", () => {
     historyStore.clear();
     // Reset wgs84Features from original dataset
     initWgs84Features();
+    // Delet new attributes from groupData
+    for (const [groupName, attrs] of newAttributeTypes.value) {
+      const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
+      if (groupData) for (const attr of attrs.keys()) delete groupData[attr];
+    }
+    newAttributeTypes.value = new Map();
   }
 
   return {
