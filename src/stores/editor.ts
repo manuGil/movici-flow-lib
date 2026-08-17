@@ -906,6 +906,8 @@ export const useEditorStore = defineStore("editor", () => {
     geometryChanges,
     wgs84Features,
     newEntityIds,
+    newAttributeTypes,
+    deletedEntityIds,
     multiSelectedIds,
     saving,
     error,

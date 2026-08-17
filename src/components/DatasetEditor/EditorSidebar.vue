@@ -69,7 +69,7 @@ const selectedGroup = computed({
 });
 
 const newAttrName = ref("");
-const newAttrType = ref<"number" | "string" | "boolean">;
+const newAttrType = ref<"number" | "string" | "boolean">("number");
 const addAttrError = ref<string | null>(null);
 
 const canAddAttribute = computed(() => !!store.entityGroup && newAttrName.value.trim().length > 0);
