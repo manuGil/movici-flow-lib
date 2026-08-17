@@ -804,6 +804,27 @@ export const useEditorStore = defineStore("editor", () => {
     return true;
   }
 
+  const newEntityGroups = ref<Set<string>>(new Set());
+
+  const GEOMETRY_COLUMS: Record<geometryType, string[]> = {
+    point: ["geometry.x", "geometry.y"],
+    linestring: ["geometry.linestring_2d"],
+    polygon: ["geometry.polygon"],
+  };
+
+  function addEntityGroup(name: string, geometryType: geometryType): boolean {
+    const data = dataset.value?.data as Record<string, Record<string, unknown[]>> | undefined;
+    const groupName = name.trim();
+    if (!data || !groupName || groupName in data) return false;
+    const group: Record<string, unknown[]> = { id: [] };
+    for (const col of GEOMETRY_COLUMS[geometryType]) group[col] = [];
+    data[groupName] = group;
+    wgs84Features.value = { ...wgs84Features.value, [groupName]: [] };
+    newEntityGroups.value.add(groupName);
+    selectEntityGroup(groupName);
+    return true;
+  }
+
   function deleteEntity(groupName: string, id: number, skipHistory = false): void {
     // Capture snapshot before mutating (necessary for undo functionality)
     const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
