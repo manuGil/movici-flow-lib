@@ -256,6 +256,7 @@ export const useEditorStore = defineStore("editor", () => {
 
       for (const prop of touchedProps) {
         group[prop] = allIds.map((id) => {
+          if (deletedIds.has(id)) return null;
           const pending = { ...propChanges.get(id), ...geomChanges.get(id) };
           if (prop in pending) return pending[prop] as PatchValue;
           return getCurrentValue(entityGroup, id, prop);
