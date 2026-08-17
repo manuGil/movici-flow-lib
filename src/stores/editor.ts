@@ -783,7 +783,7 @@ export const useEditorStore = defineStore("editor", () => {
     editModeKey.value = "view";
   }
 
-  const newAttributeTypes = ref<Map<string, Map<string, "number" | "boolena" | "string">>>(
+  const newAttributeTypes = ref<Map<string, Map<string, "number" | "boolean" | "string">>>(
     new Map(),
   ); // TODO: move to types?
 
@@ -923,6 +923,7 @@ export const useEditorStore = defineStore("editor", () => {
     initWgs84Features,
     onGeometryEdit,
     addEntity,
+    addAttribute,
     deleteEntity,
     setEditMode,
     setMultiSelection,
