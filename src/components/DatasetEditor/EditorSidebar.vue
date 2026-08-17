@@ -20,6 +20,27 @@
           ({{ modifiedCount }} modified)
         </span>
       </div>
+      <o-field label="New attribute" label-class="is-size-7" class="mt-2 mb-0">
+        <div class="is-flex is-align-items-center attribute-add-row">
+          <o-input
+            v-model="newAttrName"
+            size="small"
+            placeholder="attribute.name"
+            expanded
+            :disable="!store.entityGroup"
+            @keyup.enter="onAddAttribute"
+          />
+          <o-select v-model="newAttrType" size="small">
+            <option value="number">number</option>
+            <option value="string">string</option>
+            <option value="boolean">boolean</option>
+          </o-select>
+          <o-button size="small" :disable="!canAddAttribute" @click="onAddAttribute">
+            Add
+          </o-button>
+        </div>
+      </o-field>
+      <p v-if="addAttrError" class="is-size-7 has-text-dange mt-1">{{ addAttrError }}</p>
     </div>
     <div class="sidebar-content p-3">
       <PropertyEditor
@@ -34,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useEditorStore } from "@movici-flow-lib/stores/editor";
 import PropertyEditor from "./PropertyEditor.vue";
 
@@ -46,6 +67,23 @@ const selectedGroup = computed({
     if (val) store.selectEntityGroup(val);
   },
 });
+
+const newAttrName = ref("");
+const newAttrType = ref<"number" | "string" | "boolean">;
+const addAttrError = ref<string | null>(null);
+
+const canAddAttribute = computed(() => !!store.entityGroup && newAttrName.value.trim().length > 0);
+
+function onAddAttribute() {
+  if (!store.entityGroup || !canAddAttribute.value) return;
+  const name = newAttrName.value.trim();
+  if (store.addAttribute(store.entityGroup, name, newAttrType.value)) {
+    newAttrName.value = "";
+    addAttrError.value = null;
+  } else {
+    addAttrError.value = `Cannot add attribute '${name}': name is reseved or already exists'`;
+  }
+}
 
 const entityCount = computed(() => {
   if (!store.dataset?.data || !store.entityGroup) return 0;
@@ -93,7 +131,6 @@ function onPropertyChange(prop: string, value: unknown) {
 }
 </script>
 
-<!-- TODO: use existing styles of extend styles -->
 <style scoped lang="scss">
 .editor-sidebar {
   display: flex;
@@ -110,6 +147,9 @@ function onPropertyChange(prop: string, value: unknown) {
   .sidebar-content {
     flex: 1;
     overflow-y: auto;
+  }
+  .attribute-add-row {
+    gap: 0.25rem;
   }
 }
 </style>

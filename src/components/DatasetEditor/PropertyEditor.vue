@@ -118,7 +118,7 @@ function columnType(key: string): "number" | "boolean" | "string" | null {
     const t = typeof v;
     return t === "number" || t === "boolean" || t === "string" ? t : null;
   }
-  return null;
+  return store.newAttributeTypes.get(props.entityGroup)?.get(key) ?? null;
 }
 
 function inputKind(key: string): "enum" | "boolean" | "number" | "readonly" | "text" {
