@@ -564,7 +564,7 @@ export const useEditorStore = defineStore("editor", () => {
     entityGroup: string;
     id: number;
     isNew: boolean;
-    index: number;
+    dataIndex: number;
     rowData: Record<string, unknown>;
     wgs84Feature: Feature | null;
     pendingChanges?: Record<string, unknown>;
@@ -574,7 +574,7 @@ export const useEditorStore = defineStore("editor", () => {
       entityGroup,
       id,
       isNew,
-      index,
+      dataIndex,
       rowData,
       wgs84Feature,
       pendingChanges = {},
@@ -586,7 +586,7 @@ export const useEditorStore = defineStore("editor", () => {
     if (groupData) {
       for (const [key, value] of Object.entries(rowData)) {
         if (groupData[key]) {
-          (groupData[key] as unknown[]).splice(index, 0, value);
+          (groupData[key] as unknown[]).splice(dataIndex, 0, value);
         }
       }
     }
@@ -594,7 +594,7 @@ export const useEditorStore = defineStore("editor", () => {
     // Restore wgs84Feature at its original index
     if (wgs84Feature) {
       const currentFeatures = [...(wgs84Features.value[entityGroup] ?? [])];
-      currentFeatures.splice(index, 0, wgs84Feature);
+      currentFeatures.splice(dataIndex, 0, wgs84Feature);
       wgs84Features.value = { ...wgs84Features.value, [entityGroup]: currentFeatures };
     }
 
@@ -773,7 +773,7 @@ export const useEditorStore = defineStore("editor", () => {
       kind: "create",
       entityGroup: groupName,
       id: newId,
-      index,
+      dataIndex: index,
       rowData,
       wgs84Feature: newFeatureWithId,
       geometryColumns: { ...geomColumns },
@@ -888,7 +888,7 @@ export const useEditorStore = defineStore("editor", () => {
         entityGroup: groupName,
         id,
         isNew,
-        index,
+        dataIndex: index,
         rowData,
         wgs84Feature,
         pendingChanges,
