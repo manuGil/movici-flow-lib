@@ -7,7 +7,7 @@ import { ref } from "vue";
 import type { GeometryType } from "@movici-flow-lib/utils/geoJsonBridge";
 import type { Feature } from "geojson";
 
-export interface PropertyCommand {
+export interface UpdatePropertyCommand {
   // TODO: is there a better name for this?
   kind: "property";
   entityGroup: string;
@@ -52,7 +52,7 @@ export interface CreateCommand {
   geometryColumns: Record<string, unknown>;
 }
 
-export type Command = PropertyCommand | GeometryCommand | DeleteCommand | CreateCommand;
+export type Command = UpdatePropertyCommand | GeometryCommand | DeleteCommand | CreateCommand;
 
 export const useEditorHistoryStore = defineStore("editorHistory", () => {
   const undoStack = ref<Command[]>([]);

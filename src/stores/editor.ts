@@ -30,7 +30,7 @@ import type { Feature } from "geojson";
 import {
   useEditorHistoryStore,
   type Command,
-  type PropertyCommand,
+  type UpdatePropertyCommand,
   type GeometryCommand,
   type DeleteCommand,
   type CreateCommand,
@@ -614,7 +614,7 @@ export const useEditorStore = defineStore("editor", () => {
     }
   }
 
-  function undoPropertyChange(cmd: PropertyCommand) {
+  function undoPropertyChange(cmd: UpdatePropertyCommand) {
     const groupData = dataset.value?.data?.[cmd.entityGroup] as
       | Record<string, unknown[]>
       | undefined;
