@@ -33,6 +33,7 @@ export interface DeleteCommand {
   isNew: boolean; // distinguishes between deleting an existing entity and deleting a newly created entity that hasn't been saved to the back-end yet
   dataIndex: number;
   rowData: Record<string, unknown>;
+  wgs84Feature: Feature | null;
   pendingChanges: Record<string, unknown> | undefined;
   pendingGeometryChanges: Record<string, unknown> | undefined;
 }
