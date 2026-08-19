@@ -8,7 +8,6 @@ import type { GeometryType } from "@movici-flow-lib/utils/geoJsonBridge";
 import type { Feature } from "geojson";
 
 export interface UpdatePropertyCommand {
-  // TODO: is there a better name for this?
   kind: "property";
   entityGroup: string;
   id: number;
@@ -21,7 +20,6 @@ export interface GeometryCommand {
   kind: "geometry";
   entityGroup: string;
   id: number;
-  featureIndex: number;
   geometryType: GeometryType;
   geometryKey: string;
   oldGeometryColumns: Record<string, unknown>;
@@ -35,8 +33,6 @@ export interface DeleteCommand {
   isNew: boolean; // distinguishes between deleting an existing entity and deleting a newly created entity that hasn't been saved to the back-end yet
   dataIndex: number;
   rowData: Record<string, unknown>;
-  wgs84FeatureIndex: number;
-  wgs84Feature: Feature;
   pendingChanges: Record<string, unknown> | undefined;
   pendingGeometryChanges: Record<string, unknown> | undefined;
 }
@@ -47,7 +43,6 @@ export interface CreateCommand {
   id: number;
   dataIndex: number;
   rowData: Record<string, unknown>;
-  wgs84FeatureIndex: number;
   wgs84Feature: Feature;
   geometryColumns: Record<string, unknown>;
 }
