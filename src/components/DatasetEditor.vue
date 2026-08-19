@@ -77,7 +77,7 @@ function registerOn(on: (event: "click", callback: Record<string, DeckEventCallb
         const layerId: string = (info as any).layer?.id ?? "";
 
         // TODO: find a more reliable way to control group selection
-        const groupMatch = layerId.match(/^editor-(.+)$/);
+        const groupMatch = layerId.match(/^editable-(.+)$/);
         const clickedGroup = groupMatch?.[1] ?? store.entityGroup ?? "";
         if (clickedGroup && clickedGroup !== store.entityGroup) {
           store.selectEntityGroup(clickedGroup);

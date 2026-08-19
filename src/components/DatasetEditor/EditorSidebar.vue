@@ -21,7 +21,7 @@
             size="small"
             placeholder="entities"
             expanded
-            :disable="!store.dataset"
+            :disabled="!store.dataset"
             @keyup.enter="onAddEntityGroup"
           />
           <o-select v-model="newGroupGeometry" size="small">
@@ -29,13 +29,13 @@
             <option value="linestring">line</option>
             <option value="polygon">polygon</option>
           </o-select>
-          <o-button size="small" :disable="!canAddGroup" @click="onAddEntityGroup">Add</o-button>
+          <o-button size="small" :disabled="!canAddGroup" @click="onAddEntityGroup">Add</o-button>
         </div>
       </o-field>
-      <p v-if="addGroupError" class="is-size-7 has-text-dange mt-1">{{ addGroupError }}</p>
+      <p v-if="addGroupError" class="is-size-7 has-text-danger mt-1">{{ addGroupError }}</p>
       <div class="is-size-7 has-text-grey mt-1">
-        {{ entityCount }} entiies
-        <span v-if="modifiedCount > 0" class="has-test-warning-dark ml-2">
+        {{ entityCount }} entities
+        <span v-if="modifiedCount > 0" class="has-text-warning-dark ml-2">
           ({{ modifiedCount }} modified)
         </span>
       </div>
@@ -46,7 +46,7 @@
             size="small"
             placeholder="attribute.name"
             expanded
-            :disable="!store.entityGroup"
+            :disabled="!store.entityGroup"
             @keyup.enter="onAddAttribute"
           />
           <o-select v-model="newAttrType" size="small">
@@ -54,12 +54,12 @@
             <option value="string">string</option>
             <option value="boolean">boolean</option>
           </o-select>
-          <o-button size="small" :disable="!canAddAttribute" @click="onAddAttribute">
+          <o-button size="small" :disabled="!canAddAttribute" @click="onAddAttribute">
             Add
           </o-button>
         </div>
       </o-field>
-      <p v-if="addAttrError" class="is-size-7 has-text-dange mt-1">{{ addAttrError }}</p>
+      <p v-if="addAttrError" class="is-size-7 has-text-danger mt-1">{{ addAttrError }}</p>
     </div>
     <div class="sidebar-content p-3">
       <PropertyEditor

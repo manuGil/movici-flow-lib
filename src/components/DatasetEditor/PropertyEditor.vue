@@ -8,9 +8,9 @@
         class="property-row is-flex is-align-items-center mb-2"
       >
         <span
-          class="property-key is-size-7 has-test-grey-dark mr-2"
+          class="property-key is-size-7 has-text-grey-dark mr-2"
           :title="String(key)"
-          :class="{ 'has-text-warning-dark has-test-weight-bold': isModified(String(key)) }"
+          :class="{ 'has-text-warning-dark has-text-weight-bold': isModified(String(key)) }"
         >
           {{ String(key) }}
           <span v-if="isModified(String(key))">*</span>
