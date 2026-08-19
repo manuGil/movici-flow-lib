@@ -639,7 +639,7 @@ export const useEditorStore = defineStore("editor", () => {
       entityGroup: cmd.entityGroup,
       id: cmd.id,
       isNew: true,
-      index: cmd.dataIndex,
+      dataIndex: cmd.dataIndex,
       rowData: cmd.rowData,
       wgs84Feature: cmd.wgs84Feature,
       pendingGeometryChanges: cmd.geometryColumns,
