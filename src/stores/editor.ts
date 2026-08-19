@@ -777,7 +777,7 @@ export const useEditorStore = defineStore("editor", () => {
       rowData,
       wgs84Feature: newFeatureWithId,
       geometryColumns: { ...geomColumns },
-    } as CreateCommand);
+    });
 
     // Select the new enity and switch back to the view mode
     entityGroup.value = groupName;
@@ -893,7 +893,7 @@ export const useEditorStore = defineStore("editor", () => {
         wgs84Feature,
         pendingChanges,
         pendingGeometryChanges,
-      } as DeleteCommand);
+      });
     }
     // Return to view mode after deletion
     editModeKey.value = "view";
