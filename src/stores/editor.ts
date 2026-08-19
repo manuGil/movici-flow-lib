@@ -343,10 +343,14 @@ export const useEditorStore = defineStore("editor", () => {
     wgs84Features.value = result;
   }
 
+  function rowIndex(groupName: string, id: number) {
+    const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
+    return ((groupData?.["id"] as number[]) ?? []).indexOf(id);
+  }
+
   function getCurrentValue(groupName: string, id: number, prop: string): PatchValue {
     const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
-    const ids = (groupData?.["id"] as number[]) ?? [];
-    const index = ids.indexOf(id);
+    const index = rowIndex(groupName, id);
     if (index === -1) return null;
     return ((groupData?.[prop] as unknown[])?.[index] ?? null) as PatchValue;
   }
@@ -356,18 +360,17 @@ export const useEditorStore = defineStore("editor", () => {
     if (!groupData) return {};
     const geometryType = detectGeometryType(groupData);
     if (!geometryType) return {};
-    const ids = (groupData["id"] as number[]) ?? [];
-    const index = ids.indexOf(id);
-    if (index === -1) return {};
+    const dataIndex = rowIndex(groupName, id);
+    if (dataIndex === -1) return {};
 
     if (geometryType === "point") {
       return {
-        "geometry.x": (groupData["geometry.x"] as number[])[index],
-        "geometry.y": (groupData["geometry.y"] as number[])[index],
+        "geometry.x": (groupData["geometry.x"] as number[])[dataIndex],
+        "geometry.y": (groupData["geometry.y"] as number[])[dataIndex],
       };
     }
     const geometryKey = getGeometryKey(groupData, geometryType);
-    return { [geometryKey]: (groupData[geometryKey] as unknown[])[index] };
+    return { [geometryKey]: (groupData[geometryKey] as unknown[])[dataIndex] };
   }
 
   function onGeometryEdit(
@@ -422,7 +425,6 @@ export const useEditorStore = defineStore("editor", () => {
         kind: "geometry",
         entityGroup: groupName,
         id,
-        featureIndex,
         geometryType,
         geometryKey,
         oldGeometryColumns,
@@ -456,7 +458,8 @@ export const useEditorStore = defineStore("editor", () => {
 
     // Update wgs84Features for rendering
     const currentFeatures = wgs84Features.value[cmd.entityGroup];
-    if (currentFeatures && currentFeatures[cmd.featureIndex]) {
+    const featureIndex = rowIndex(cmd.entityGroup, cmd.id);
+    if (currentFeatures && currentFeatures[featureIndex]) {
       const newGeom = geomColumnsToWgs84Geometry(
         geomToApply,
         cmd.geometryType,
@@ -464,8 +467,8 @@ export const useEditorStore = defineStore("editor", () => {
         epsg,
       );
       const updatedFeatures = [...currentFeatures];
-      updatedFeatures[cmd.featureIndex] = {
-        ...updatedFeatures[cmd.featureIndex],
+      updatedFeatures[featureIndex] = {
+        ...updatedFeatures[featureIndex],
         geometry: newGeom,
       } as unknown as Feature;
       wgs84Features.value = { ...wgs84Features.value, [cmd.entityGroup]: updatedFeatures };
@@ -520,8 +523,9 @@ export const useEditorStore = defineStore("editor", () => {
     const pending = changes.value.get(entityGroup)?.get(id);
     const groupData = dataset.value?.data?.[entityGroup] as Record<string, unknown[]> | undefined;
     const ids: number[] = (groupData?.["id"] as number[]) ?? [];
-    const index = ids.indexOf(id);
-    const originalValue = index !== -1 ? (groupData?.[prop] as unknown[])?.[index] : undefined;
+    const dataIndex = rowIndex(entityGroup, id);
+    const originalValue =
+      dataIndex !== -1 ? (groupData?.[prop] as unknown[])?.[dataIndex] : undefined;
     const oldValue = pending?.[prop] !== undefined ? pending[prop] : originalValue;
 
     if (!changes.value.has(entityGroup)) {
@@ -560,10 +564,9 @@ export const useEditorStore = defineStore("editor", () => {
     entityGroup: string;
     id: number;
     isNew: boolean;
-    dataIndex: number;
+    index: number;
     rowData: Record<string, unknown>;
-    wgs84FeatureIndex: number;
-    wgs84Feature: Feature;
+    wgs84Feature: Feature | null;
     pendingChanges?: Record<string, unknown>;
     pendingGeometryChanges?: Record<string, unknown>;
   }) {
@@ -571,9 +574,8 @@ export const useEditorStore = defineStore("editor", () => {
       entityGroup,
       id,
       isNew,
-      dataIndex,
+      index,
       rowData,
-      wgs84FeatureIndex,
       wgs84Feature,
       pendingChanges = {},
       pendingGeometryChanges = {},
@@ -584,15 +586,17 @@ export const useEditorStore = defineStore("editor", () => {
     if (groupData) {
       for (const [key, value] of Object.entries(rowData)) {
         if (groupData[key]) {
-          (groupData[key] as unknown[]).splice(dataIndex, 0, value);
+          (groupData[key] as unknown[]).splice(index, 0, value);
         }
       }
     }
 
     // Restore wgs84Feature at its original index
-    const currentFeatures = [...(wgs84Features.value[entityGroup] ?? [])];
-    currentFeatures.splice(wgs84FeatureIndex, 0, wgs84Feature);
-    wgs84Features.value = { ...wgs84Features.value, [entityGroup]: currentFeatures };
+    if (wgs84Feature) {
+      const currentFeatures = [...(wgs84Features.value[entityGroup] ?? [])];
+      currentFeatures.splice(index, 0, wgs84Feature);
+      wgs84Features.value = { ...wgs84Features.value, [entityGroup]: currentFeatures };
+    }
 
     // Restore any pending property/geometry changes
     if (pendingChanges) {
@@ -619,9 +623,9 @@ export const useEditorStore = defineStore("editor", () => {
       | Record<string, unknown[]>
       | undefined;
     const ids: number[] = (groupData?.["id"] as number[]) ?? [];
-    const index = ids.indexOf(cmd.id);
+    const dataIndex = ids.indexOf(cmd.id);
     const originalValue =
-      index !== -1 ? (groupData?.[cmd.property] as unknown[])?.[index] : undefined;
+      dataIndex !== -1 ? (groupData?.[cmd.property] as unknown[])?.[dataIndex] : undefined;
 
     if (cmd.oldValue === originalValue) {
       revertProperty(cmd.entityGroup, cmd.id, cmd.property, true);
@@ -635,9 +639,8 @@ export const useEditorStore = defineStore("editor", () => {
       entityGroup: cmd.entityGroup,
       id: cmd.id,
       isNew: true,
-      dataIndex: cmd.dataIndex,
+      index: cmd.dataIndex,
       rowData: cmd.rowData,
-      wgs84FeatureIndex: cmd.wgs84FeatureIndex,
       wgs84Feature: cmd.wgs84Feature,
       pendingGeometryChanges: cmd.geometryColumns,
     };
@@ -663,7 +666,7 @@ export const useEditorStore = defineStore("editor", () => {
       case "geometry":
         return applyGeometry(cmd, cmd.newGeometryColumns);
       case "delete":
-        return deleteEntity(cmd.entityGroup, cmd.id);
+        return deleteEntity(cmd.entityGroup, cmd.id, true);
       case "create":
         return restoreEntity(createdEntitySnapshot(cmd));
     }
@@ -722,8 +725,7 @@ export const useEditorStore = defineStore("editor", () => {
     const geomColumns = extractGeometryColumns(newFeature as any, geometryType, geometryKey, epsg);
 
     // record positions before inserting (for undo purposes)
-    const dataIndex = ids.length; // will be appended at this index
-    const wgs84FeatureIndex = (wgs84Features.value[groupName] ?? []).length; // will be appended at this index
+    const index = ids.length;
 
     // Add new row to dataset columnar data
     (groupData["id"] as number[]).push(newId);
@@ -771,9 +773,8 @@ export const useEditorStore = defineStore("editor", () => {
       kind: "create",
       entityGroup: groupName,
       id: newId,
-      dataIndex,
+      index,
       rowData,
-      wgs84FeatureIndex,
       wgs84Feature: newFeatureWithId,
       geometryColumns: { ...geomColumns },
     } as CreateCommand);
@@ -829,20 +830,15 @@ export const useEditorStore = defineStore("editor", () => {
   function deleteEntity(groupName: string, id: number, skipHistory = false): void {
     // Capture snapshot before mutating (necessary for undo functionality)
     const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
-    let dataIndex = -1;
+    let index = groupData ? rowIndex(groupName, id) : -1;
     const rowData: Record<string, unknown> = {};
-    if (groupData) {
-      const ids = (groupData["id"] as number[]) ?? [];
-      dataIndex = ids.indexOf(id);
-      if (dataIndex !== -1) {
-        for (const key of Object.keys(groupData)) {
-          rowData[key] = (groupData[key] as unknown[])[dataIndex];
-        }
+    if (groupData && index !== -1) {
+      for (const key of Object.keys(groupData)) {
+        rowData[key] = (groupData[key] as unknown[])[index];
       }
     }
     const allFeatures = wgs84Features.value[groupName] ?? [];
-    const wgs84FeatureIndex = allFeatures.findIndex((f) => (f as any).properties?.__id === id);
-    const wgs84Feature = wgs84FeatureIndex !== -1 ? allFeatures[wgs84FeatureIndex] : null;
+    const wgs84Feature = index !== -1 ? (allFeatures[index] ?? null) : null;
     const pendingChanges = changes.value.get(groupName)?.get(id)
       ? { ...changes.value.get(groupName)!.get(id)! }
       : undefined;
@@ -852,9 +848,9 @@ export const useEditorStore = defineStore("editor", () => {
     const isNew = newEntityIds.value.get(groupName)?.has(id) ?? false;
 
     // Remove the row from columnar dataset
-    if (groupData && dataIndex !== -1) {
+    if (groupData && index !== -1) {
       for (const key of Object.keys(groupData)) {
-        (groupData[key] as unknown[]).splice(dataIndex, 1);
+        (groupData[key] as unknown[]).splice(index, 1);
       }
     }
 
@@ -885,15 +881,15 @@ export const useEditorStore = defineStore("editor", () => {
     }
 
     // Push to history fo undo/redo works. Skip for redo replays
-    if (!skipHistory && wgs84Feature) {
+    // index === -1 means nothing was removed
+    if (!skipHistory && index !== -1) {
       historyStore.push({
         kind: "delete",
         entityGroup: groupName,
         id,
         isNew,
-        dataIndex,
+        index,
         rowData,
-        wgs84FeatureIndex,
         wgs84Feature,
         pendingChanges,
         pendingGeometryChanges,
