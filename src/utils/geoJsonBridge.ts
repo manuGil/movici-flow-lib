@@ -37,7 +37,7 @@ export interface GeometryBridge {
   getGeometryData(group: GroupData, dataIndex: number): GeometryData;
   featureToGeometryData(feature: Feature): GeometryData;
   geometryDataToGeometry(data: GeometryData): Geometry;
-  entityDataToWsg84Features(group: GroupData): Feature[];
+  entityDataToWgs84Features(group: GroupData): Feature[];
   getBBox(group: GroupData): [number, number, number, number] | null; // Bounding box
 }
 
@@ -58,7 +58,7 @@ abstract class BaseGeometryBridge implements GeometryBridge {
   // Coordinates in dataset CRS used for bbox
   protected abstract coordinatesOf(data: GeometryData): number[][];
 
-  entityDataToWsg84Features(group: GroupData): Feature[] {
+  entityDataToWgs84Features(group: GroupData): Feature[] {
     const ids = group.id ?? [];
     const propKeys = Object.keys(group).filter((k) => !this.geometryKeys.includes(k));
 
