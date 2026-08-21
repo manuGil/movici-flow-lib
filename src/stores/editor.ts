@@ -9,6 +9,7 @@ import type {
   PatchData,
   PatchValue,
   PatchEntityGroupData,
+  EntityGroupData,
 } from "@movici-flow-lib/types";
 import {
   createGeometryBridge,
@@ -300,9 +301,9 @@ export const useEditorStore = defineStore("editor", () => {
       const ids = groupData.id ?? [];
       const map = new Map<number, number>();
       let max = 0;
-      for (let i = 0; i < ids.length; i++) {
-        map.set(ids[i], i);
-        if (ids[i] > max) max = ids[i];
+      for (const [i, id] of ids.entries()) {
+        map.set(id, i);
+        if (id > max) max = id;
       }
       index[groupName] = map;
       counters[groupName] = max + 1;
@@ -317,7 +318,7 @@ export const useEditorStore = defineStore("editor", () => {
   function reindex(groupName: string) {
     const ids = (dataset.value?.data?.[groupName]?.["id"] as number[]) ?? [];
     const map = new Map<number, number>();
-    for (let i = 0; i < ids.length; i++) map.set(ids[i], i);
+    for (const [i, id] of ids.entries()) map.set(id, i);
     idIndex.value = { ...idIndex.value, [groupName]: map };
   }
 
@@ -391,7 +392,7 @@ export const useEditorStore = defineStore("editor", () => {
     }
   }
 
-  function applyGeometry(cmd: GeometryCommand, geomToApply: Record<string, unknown>) {
+  function applyGeometry(cmd: GeometryCommand, geomToApply: GeometryData) {
     // Checks if we are restoring the original geometry
     const isNew = newEntityIds.value.get(cmd.entityGroup)?.has(cmd.id) ?? false;
     const originalGeom = getOriginalGeomColumns(cmd.entityGroup, cmd.id);
@@ -677,7 +678,7 @@ export const useEditorStore = defineStore("editor", () => {
     const geomColumns = bridge.featureToGeometryData(newFeature);
 
     // record positions before inserting (for undo purposes)
-    const index = ids.length;
+    const index = (groupData["id"] as number[]).length;
 
     // Add new row to dataset columnar data
     (groupData["id"] as number[]).push(newId);
@@ -768,7 +769,7 @@ export const useEditorStore = defineStore("editor", () => {
     const groupName = name.trim();
     if (!data || !groupName || groupName in data) return false;
 
-    const group: Record<string, unknown[]> = { id: [] };
+    const group: EntityGroupData<unknown[]> = { id: [] };
     for (const col of DEFAULT_GEOMETRY_COLUMNS[geometryType]) group[col] = [];
 
     const bridge = createGeometryBridge(group, dataset.value?.epsg_code ?? null);
