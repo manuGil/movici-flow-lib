@@ -1,6 +1,4 @@
-/* An utility to do data transformations that enable editing datasets.
-The dataset editor requires data to be in GeoJsonData.
-*/
+/* An utility to bridge Movici columnar entity data and GeoJSON features for the dataset editor. */
 
 import {
   transform,
@@ -9,164 +7,207 @@ import {
   reverseTransformArray,
   determineCRS,
 } from "../crs";
+import type { EntityGroupData } from "../types";
+import { Feature, Geometry, Point, LineString, Polygon } from "geojson";
 
-import type { Feature, FeatureCollection } from "geojson";
-
-export type { Feature, FeatureCollection };
+export type { Feature };
 export type GeometryType = "point" | "linestring" | "polygon";
 
-export function detectGeometryType(groupData: Record<string, unknown[]>): GeometryType | null {
-  if ("geometry.x" in groupData && "geometry.y" in groupData) {
-    return "point";
-  }
-  if ("geometry.linestring_2d" in groupData || "geometry.linestring_3d" in groupData) {
-    return "linestring";
-  }
-  if (
-    "geometry.polygon" in groupData ||
-    "geometry.polygon_2d" in groupData ||
-    "geometry.polygon_3d" in groupData
-  ) {
-    return "polygon";
-  }
-  return null; // No geometry columns detected
+export type GeometryData = Record<string, number | number[][]>;
+
+type GroupData = EntityGroupData<any>;
+
+// Candidate geometry columns per type
+export const GEOMETRY_COLUMNS: Record<GeometryType, string[]> = {
+  point: ["geometry.x", "geometry.y"],
+  linestring: ["geometry.linestring_2d", "geometry.linestring_3d"],
+  polygon: ["geometry.polygon_3d", "geometry.polygon_2d", "geometry.polygon"],
+};
+
+// defaulst for new entity groups
+export const DEFAULT_GEOMETRY_COLUMNS: Record<GeometryType, string[]> = {
+  point: ["geometry.x", "geometry.y"],
+  linestring: ["geometry.linestring_2d"],
+  polygon: ["geometry.polygon"],
+};
+
+export interface GeometryBridge {
+  readonly geometryType: GeometryType;
+  readonly geometryKeys: string[];
+  getGeometryData(group: GroupData, dataIndex: number): GeometryData;
+  featureToGeometryData(feature: Feature): GeometryData;
+  geometryDataToGeometry(data: GeometryData): Geometry;
+  entityDataToWsg84Features(group: GroupData): Feature[];
+  getBBox(group: GroupData): [number, number, number, number] | null; // Bounding box
 }
 
-export function getGeometryKey(
-  groupData: Record<string, unknown[]>,
-  geomType: GeometryType,
-): string {
-  // point
-  if (geomType === "point") {
-    return "geometry.x";
+abstract class BaseGeometryBridge implements GeometryBridge {
+  abstract readonly geometryType: GeometryType;
+  abstract readonly geometryKeys: string[];
+
+  protected readonly crs: string;
+
+  constructor(epsg: number | null) {
+    this.crs = determineCRS(epsg);
   }
-  // linestring
-  if (geomType === "linestring") {
-    if ("geometry.linestring_2d" in groupData) return "geometry.linestring_2d";
-    return "geometry.linestring_3d";
-  }
-  // polygon
-  if ("geometry.polygon" in groupData) return "geometry.polygon";
-  if ("geometry.polygon_2d" in groupData) return "geometry.polygon_2d";
-  return "geometry.polygon_3d";
-}
 
-export function groupToFeatureCollection(
-  groupData: Record<string, unknown[]>,
-  epsg: number | null,
-): FeatureCollection {
-  const geomType = detectGeometryType(groupData);
-  const ids = (groupData["id"] as unknown[]) ?? [];
-  const crs = determineCRS(epsg);
+  abstract getGeometryData(group: GroupData, dataIndex: number): GeometryData;
+  abstract featureToGeometryData(feature: Feature): GeometryData;
+  abstract geometryDataToGeometry(data: GeometryData): Geometry;
 
-  //geometry property keys
-  const geometryKey = new Set([
-    "geometry.x",
-    "geometry.y",
-    "geometry.linestring_2d",
-    "geometry.linestring_3d",
-    "geometry.polygon",
-    "geometry.polygon_2d",
-    "geometry.polygon_3d",
-  ]);
+  // Coordinates in dataset CRS used for bbox
+  protected abstract coordinatesOf(data: GeometryData): number[][];
 
-  const propKey = Object.keys(groupData).filter((k) => !geometryKey.has(k));
+  entityDataToWsg84Features(group: GroupData): Feature[] {
+    const ids = group.id ?? [];
+    const propKeys = Object.keys(group).filter((k) => !this.geometryKeys.includes(k));
 
-  // TODO: Continue here: REVIEW THE SYNTAX
-  const features: Feature[] = ids.map((id, index) => {
-    // Build properties
-    const properties: Record<string, unknown> = { __id: id };
-    for (const key of propKey) {
-      properties[key] = (groupData[key] as unknown[])[index];
-    }
-    // Build geometry
-    let geometry: any = null;
-
-    if (geomType === "point") {
-      const x = (groupData["geometry.x"] as number[])[index] ?? 0;
-      const y = (groupData["geometry.y"] as number[])[index] ?? 0;
-      const [lon, lat] = transform([x, y], crs);
-      geometry = {
-        type: "Point",
-        coordinates: [lon, lat],
+    return ids.map((id, dataIndex) => {
+      const properties: Record<string, unknown> = { __id, id };
+      for (const key of propKeys) {
+        properties[key] = group[key][dataIndex];
+      }
+      return {
+        type: "Feature",
+        geometry: this.geometryDataToGeometry(this.getGeometryData(group, dataIndex)),
+        properties,
       };
-    } else if (geomType === "linestring") {
-      const geomKey = getGeometryKey(groupData, geomType);
-      const line = (groupData[geomKey] as number[][][])[index];
-      const transformed = transformArray(line as [number, number][], crs);
-      geometry = { type: "LineString", coordinates: transformed.map(([lon, lat]) => [lon, lat]) };
-    } else if (geomType === "polygon") {
-      const geomKey = getGeometryKey(groupData, geomType);
-      const ring = (groupData[geomKey] as number[][][])[index] ?? [];
-      const transformed = transformArray(ring as [number, number][], crs);
-      geometry = { type: "Polygon", coordinates: [transformed.map(([lon, lat]) => [lon, lat])] };
+    });
+  }
+
+  getBBox(group: GroupData): [number, number, number, number] | null {
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = Infinity;
+    let maxY = Infinity;
+    let found = false;
+
+    const count = group.id?.length ?? 0;
+    for (let i = 0; i < count; i++) {
+      for (const coord of this.coordinatesOf(this.getGeometryData(group, i))) {
+        const x = coord[0];
+        const y = coord[1];
+        if (x == null || y == null) continue;
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+        found = true;
+      }
     }
-
-    return {
-      type: "Feature",
-      geometry,
-      properties,
-    } as Feature;
-  });
-
-  return { type: "FeatureCollection", features };
+    return found ? [minX, minY, maxX, maxY] : null;
+  }
 }
 
-export function extractGeometryColumns(
-  feature: Feature,
-  geomType: GeometryType,
-  geomKey: string,
-  epsg: number | null,
-): Record<string, unknown> {
-  const crs = determineCRS(epsg);
-  const geom = (feature as any).geometry;
+export class PointBridge extends BaseGeometryBridge {
+  readonly geometryType = "point" as const;
+  readonly geometryKeys = ["geometry.x", "geometry.y"];
 
-  if (geomType === "point") {
-    const [lon, lat] = geom?.coordinates ?? [0, 0];
-    const [x, y] = reverseTransform([lon, lat], crs);
+  getGeometryData(group: GroupData, dataIndex: number): GeometryData {
+    return {
+      "geometry.x": (group["geometry.x"] as number[])[dataIndex],
+      "geometry.y": (group["geometry.y"] as number[])[dataIndex],
+    };
+  }
+
+  featureToGeometryData(feature: Feature): GeometryData {
+    const [lon, lat] = (feature.geometry as Point)?.Coordinates ?? [0, 0];
+    const [x, y] = reverseTransform([lon, lat], this.crs);
     return { "geometry.x": x, "geometry.y": y };
   }
 
-  if (geomType === "linestring") {
-    const coords: [number, number][] = geom?.coordinates ?? [];
-    const transformed = reverseTransformArray(coords, crs);
-    return { [geomKey]: transformed.map(([x, y]) => [x, y]) };
+  geometryDataToGeometry(data: GeometryData): Point {
+    const x = data["geometry.x"] as number;
+    const y = data["geometry.y"] as number;
+    return { type: "Point", coordinates: transform([x, y], this.crs) };
   }
 
-  // Polygon case: GeoJSON stores polygons as [[ring]], for now we are keeping ONLY outter ring. FIXME:
-  const rings: [number, number][][] = geom?.coordinates ?? [];
-  const outerRing: [number, number][] = rings[0] ?? [];
-  const transformed = reverseTransformArray(outerRing, crs);
-  return { [geomKey]: transformed.map(([x, y]) => [x, y]) };
+  protected coordinatesOf(data: GeometryData): number[][] {
+    return [[data["geometry.x"] as number, data["geometry.y"] as number]];
+  }
 }
 
-export function computeLineStringLength(coords: number[][]): number {
-  return 0; // TODO: See GH issues
+export class LineStringBridge extends BaseGeometryBridge {
+  readonly geometryType = "linestring" as const;
+  readonly geometryKeys: string[];
+
+  constructor(
+    private readonly key: string,
+    epsg: number | null,
+  ) {
+    super(epsg);
+    this.geometryKeys = [key];
+  }
+
+  getGeometryData(group: GroupData, dataIndex: number): GeometryData {
+    return { [this.key]: (group[this.key] as number[][][])[dataIndex] ?? [] };
+  }
+
+  featureToGeometryData(feature: Feature): GeometryData {
+    const coords = ((feature.geometry as LineString)?.coordinates ?? []) as [number, number][];
+    return { [this.key]: reverseTransformArray(coords, this.crs) };
+  }
+
+  geometryDataToGeometry(data: GeometryData): LineString {
+    const line = (data[this.key] ?? []) as [number, number][];
+    return { type: "LineString", coordinates: transformArray(line, this.crs) };
+  }
+
+  protected coordinatesOf(data: GeometryData): number[][] {
+    return (data[this.key] ?? []) as number[][];
+  }
 }
 
-export function geomColumnsToWgs84Geometry(
-  geomColumns: Record<string, unknown>,
-  geomType: GeometryType,
-  geomKey: string,
-  epsg: number | null,
-): any {
-  const crs = determineCRS(epsg);
+export class PolygonBridge extends BaseGeometryBridge {
+  readonly geometryType = "polygon" as const;
+  readonly geometryKeys: string[];
 
-  if (geomType == "point") {
-    const x = geomColumns["geometry.x"] as number;
-    const y = geomColumns["geometry.y"] as number;
-    const [lon, lat] = transform([x, y], crs);
-    return { type: "Point", coordinates: [lon, lat] };
+  constructor(
+    private readonly key: string,
+    epsg: number | null,
+  ) {
+    super(epsg);
+    this.geometryKeys = [key];
   }
 
-  if (geomType == "linestring") {
-    const line = geomColumns[geomKey] as number[][];
-    const transformed = transformArray(line as [number, number][], crs);
-    return { type: "LineString", coordinates: transformed.map(([lon, lat]) => [lon, lat]) };
+  getGeometryData(group: GroupData, dataIndex: number): GeometryData {
+    return { [this.key]: (group[this.key] as number[][][])[dataIndex] ?? [] };
   }
 
-  // Polygon case
-  const ring = geomColumns[geomKey] as number[][];
-  const transformed = transformArray(ring as [number, number][], crs);
-  return { type: "Polygon", coordinates: [transformed.map(([lon, lat]) => [lon, lat])] }; // TODO: Implement logic to transform geometry columns to WGS84 geometry. This will likely involve using the transform function from the crs module, and determining the source CRS using the determineCRS function.
+  // Only outer ring is kept; holes are dropped
+  featureToGeometryData(feature: Feature): GeometryData {
+    const rings = ((feature.geometry as Polygon)?.coordinates ?? []) as [number, number][][];
+    const outer = rings[0] ?? [];
+    return { [this.key]: closeRing(reverseTransformArray(outer, this.crs)) };
+  }
+
+  geometryDataToGeometry(data: GeometryData): Polygon {
+    const ring = (data[this.key] ?? []) as [number, number][];
+    return { type: "Polygon", coordinates: [transformArray(ring, this.crs)] };
+  }
+
+  protected coordinatesOf(data: GeometryData): number[][] {
+    return (data[this.key] ?? []) as number[][];
+  }
+}
+
+function closeRing(ring: number[][]): number[][] {
+  const first = ring[0];
+  const last = ring[ring.length - 1];
+  if (!first || !last) return ring;
+  if (first[0] === last[0] && first[1] === last[1]) return ring;
+  return [...ring, first];
+}
+
+export function createGeometryBridge(group: GroupData, epsg: number | null): GeometryBridge | null {
+  if ("geometry.x" in group && "geometry.y" in group) {
+    return new PointBridge(epsg);
+  }
+  const lineKey = GEOMETRY_COLUMNS.linestring.find((k) => k in group);
+  if (lineKey) return new LineStringBridge(lineKey, epsg);
+
+  const polygonKey = GEOMETRY_COLUMNS.polygon.find((k) => k in group);
+  if (polygonKey) return new PolygonBridge(polygonKey, epsg);
+
+  return null;
 }
