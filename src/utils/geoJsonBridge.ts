@@ -12,7 +12,6 @@ import { Feature, Geometry, Point, LineString, Polygon } from "geojson";
 
 export type { Feature };
 export type GeometryType = "point" | "linestring" | "polygon";
-
 export type GeometryData = Record<string, number | number[][]>;
 
 type GroupData = EntityGroupData<any>;

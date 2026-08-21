@@ -93,21 +93,6 @@ export const useEditorStore = defineStore("editor", () => {
     return Object.keys(dataset.value.data);
   });
 
-  const entities = computed<Record<string, unknown>[]>(() => {
-    if (!dataset.value?.data || !entityGroup.value) return [];
-    const groupData = dataset.value.data[entityGroup.value] as Record<string, unknown[]>;
-    if (!groupData) return [];
-    const keys = Object.keys(groupData);
-    const ids: number[] = (groupData["id"] as number[]) ?? [];
-    return ids.map((id, index) => {
-      const row: Record<string, unknown> = {};
-      for (const key of keys) {
-        row[key] = (groupData[key] as unknown[])[index];
-      }
-      return row;
-    });
-  });
-
   const selectedEntity = computed<Record<string, unknown> | null>(() => {
     if (selectedId.value === null || !entityGroup.value) return null;
     const groupData = dataset.value?.data?.[entityGroup.value] as
@@ -756,7 +741,7 @@ export const useEditorStore = defineStore("editor", () => {
 
   const newAttributeTypes = ref<Map<string, Map<string, "number" | "boolean" | "string">>>(
     new Map(),
-  ); // TODO: move to types?
+  );
 
   function addAttribute(
     groupName: string,
@@ -778,21 +763,25 @@ export const useEditorStore = defineStore("editor", () => {
 
   const newEntityGroups = ref<Set<string>>(new Set());
 
-  const GEOMETRY_COLUMS: Record<GeometryType, string[]> = {
-    point: ["geometry.x", "geometry.y"],
-    linestring: ["geometry.linestring_2d"],
-    polygon: ["geometry.polygon"],
-  };
-
   function addEntityGroup(name: string, geometryType: GeometryType): boolean {
-    const data = dataset.value?.data as Record<string, Record<string, unknown[]>> | undefined;
+    const data = dataset.value?.data;
     const groupName = name.trim();
     if (!data || !groupName || groupName in data) return false;
+
     const group: Record<string, unknown[]> = { id: [] };
-    for (const col of GEOMETRY_COLUMS[geometryType]) group[col] = [];
+    for (const col of DEFAULT_GEOMETRY_COLUMNS[geometryType]) group[col] = [];
+
+    const bridge = createGeometryBridge(group, dataset.value?.epsg_code ?? null);
+    if (!bridge) return false;
+
     data[groupName] = group;
+    bridges.value = { ...bridges.value, [groupName]: bridge };
+    idIndex.value = { ...idIndex.value, [groupName]: new Map() };
+    nextId.value = { ...nextId.value, [groupName]: 1 };
+
     wgs84Features.value = { ...wgs84Features.value, [groupName]: [] };
     newEntityGroups.value.add(groupName);
+    triggerRef(dataset);
     selectEntityGroup(groupName);
     return true;
   }
@@ -904,7 +893,6 @@ export const useEditorStore = defineStore("editor", () => {
     editModeKey,
     editMode,
     entityGroupNames,
-    entities,
     selectedEntity,
     boundingBox,
     currentGroupGeometryType,
