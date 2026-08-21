@@ -8,7 +8,7 @@ import {
   determineCRS,
 } from "../crs";
 import type { EntityGroupData } from "../types";
-import { Feature, Geometry, Point, LineString, Polygon } from "geojson";
+import type { Feature, Geometry, Point, LineString, Polygon } from "geojson";
 
 export type { Feature };
 export type GeometryType = "point" | "linestring" | "polygon";
@@ -62,9 +62,9 @@ abstract class BaseGeometryBridge implements GeometryBridge {
     const propKeys = Object.keys(group).filter((k) => !this.geometryKeys.includes(k));
 
     return ids.map((id, dataIndex) => {
-      const properties: Record<string, unknown> = { __id, id };
+      const properties: Record<string, unknown> = { __id: id };
       for (const key of propKeys) {
-        properties[key] = group[key][dataIndex];
+        properties[key] = group[key]?.[dataIndex];
       }
       return {
         type: "Feature",
@@ -77,8 +77,8 @@ abstract class BaseGeometryBridge implements GeometryBridge {
   getBounds(group: GroupData): [number, number, number, number] | null {
     let minX = Infinity;
     let minY = Infinity;
-    let maxX = Infinity;
-    let maxY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
     let found = false;
 
     const count = group.id?.length ?? 0;
