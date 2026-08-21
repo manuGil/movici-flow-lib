@@ -64,7 +64,7 @@ abstract class BaseGeometryBridge implements GeometryBridge {
     return ids.map((id, dataIndex) => {
       const properties: Record<string, unknown> = { __id: id };
       for (const key of propKeys) {
-        properties[key] = group[key][dataIndex];
+        properties[key] = group[key]?.[dataIndex];
       }
       return {
         type: "Feature",
