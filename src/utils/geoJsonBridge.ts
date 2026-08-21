@@ -38,7 +38,7 @@ export interface GeometryBridge {
   featureToGeometryData(feature: Feature): GeometryData;
   geometryDataToGeometry(data: GeometryData): Geometry;
   entityDataToWgs84Features(group: GroupData): Feature[];
-  getBBox(group: GroupData): [number, number, number, number] | null; // Bounding box
+  getBounds(group: GroupData): [number, number, number, number] | null; // Bounding box
 }
 
 abstract class BaseGeometryBridge implements GeometryBridge {
@@ -75,7 +75,7 @@ abstract class BaseGeometryBridge implements GeometryBridge {
     });
   }
 
-  getBBox(group: GroupData): [number, number, number, number] | null {
+  getBounds(group: GroupData): [number, number, number, number] | null {
     let minX = Infinity;
     let minY = Infinity;
     let maxX = Infinity;
