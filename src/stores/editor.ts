@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, shallowRef, triggerRef } from "vue";
 import { useFlowStore } from "@movici-flow-lib/stores/flow";
 import { CAPABILITIES } from "@movici-flow-lib/api";
 import { ensureProjection } from "@movici-flow-lib/crs";
@@ -11,13 +11,14 @@ import type {
   PatchEntityGroupData,
 } from "@movici-flow-lib/types";
 import {
-  detectGeometryType,
-  getGeometryKey,
-  groupToFeatureCollection,
-  extractGeometryColumns,
-  geomColumnsToWgs84Geometry,
+  createGeometryBridge,
+  DEFAULT_GEOMETRY_COLUMNS,
 } from "@movici-flow-lib/utils/geoJsonBridge";
-import type { GeometryType } from "@movici-flow-lib/utils/geoJsonBridge";
+import type {
+  GeometryBridge,
+  GeometryData,
+  GeometryType,
+} from "@movici-flow-lib/utils/geoJsonBridge";
 import {
   ViewMode,
   ModifyMode,
@@ -50,12 +51,15 @@ export type EditModeKey =
 
 export const useEditorStore = defineStore("editor", () => {
   const datasetUUID = ref<string | null>(null);
-  const dataset = ref<DatasetWithData | null>(null);
+  const dataset = shallowRef<DatasetWithData | null>(null);
   const entityGroup = ref<string | null>(null);
   const selectedId = ref<number | null>(null);
   const changes = ref<Changes>(new Map());
   const geometryChanges = ref<Changes>(new Map());
-  const wgs84Features = ref<Record<string, Feature[]>>({});
+  const bridges = shallowRef<Record<string, GeometryBridge>>({});
+  const idIndex = shallowRef<Record<string, Map<number, number>>>({});
+  const nextId = shallowRef<Record<string, number>>({});
+  const wgs84Features = shallowRef<Record<string, Feature[]>>({});
   // Ids of entities created in an editiong session (new entities)
   const newEntityIds = ref<Map<string, Set<number>>>(new Map());
   // Ids of existing entities deleted in an editing session
@@ -110,8 +114,7 @@ export const useEditorStore = defineStore("editor", () => {
       | Record<string, unknown[]>
       | undefined;
     if (!groupData) return null;
-    const ids: number[] = (groupData["id"] as number[]) ?? [];
-    const index = ids.indexOf(selectedId.value);
+    const index = rowIndex(entityGroup.value, selectedId.value);
     if (index === -1) return null;
     const row: Record<string, unknown> = {};
     for (const key of Object.keys(groupData)) {
@@ -133,7 +136,6 @@ export const useEditorStore = defineStore("editor", () => {
 
   // Bouding box [minX, minY, maxX, maxY] in the dataset CRS from geometry columns.
   // It handles point (geometry.x/y), line (geometry.linestring_2d/3d) and polygon.
-
   const boundingBox = computed<[number, number, number, number] | null>(() => {
     if (!dataset.value?.data) return null;
     let minX = Infinity,
@@ -142,60 +144,21 @@ export const useEditorStore = defineStore("editor", () => {
       maxY = -Infinity;
     let found = false;
 
-    function expand(x: number, y: number) {
-      if (x < minX) minX = x;
-      if (y < minY) minY = y;
-      if (x > maxX) maxX = x;
-      if (y > maxY) maxY = y;
+    for (const [groupName, groupData] of Object.entries(dataset.value.data)) {
+      const bounds = bridges.value[groupName]?.getBounds(groupData);
+      if (!bounds) continue;
       found = true;
+      if (bounds[0] < minX) minX = bounds[0];
+      if (bounds[1] < minY) minY = bounds[1];
+      if (bounds[2] < maxX) maxX = bounds[2];
+      if (bounds[3] < maxY) maxY = bounds[3];
     }
-    for (const groupDataRaw of Object.values(dataset.value.data)) {
-      const g = groupDataRaw as Record<string, unknown[]>;
-      if ("geometry.x" in g && "geometry.y" in g) {
-        const xs = g["geometry.x"] as number[];
-        const ys = g["geometry.y"] as number[];
-        xs.forEach((x, i) => expand(x, ys[i] ?? 0));
-      }
-
-      for (const key of ["geometry.linestring_2d", "geometry.linestring_3d"] as const) {
-        if (key in g) {
-          for (const line of g[key] as number[][][]) {
-            for (const coord of line) {
-              if (coord[0] !== undefined && coord[1] !== undefined) {
-                expand(coord[0], coord[1]);
-              }
-            }
-          }
-        }
-      }
-
-      for (const key of [
-        "geometry.polygon",
-        "geometry.polygon_2d",
-        "geometry.polygon_3d",
-      ] as const) {
-        if (key in g) {
-          for (const ring of g[key] as number[][][]) {
-            for (const coord of ring) {
-              if (coord[0] !== undefined && coord[1] !== undefined) {
-                expand(coord[0], coord[1]);
-              }
-            }
-          }
-        }
-      }
-    }
-
     return found ? [minX, minY, maxX, maxY] : null;
   });
 
-  const currentGroupGeometryType = computed(() => {
-    if (!dataset.value?.data || !entityGroup.value) return null;
-    const groupData = dataset.value.data[entityGroup.value] as
-      | Record<string, unknown[]>
-      | undefined;
-    return groupData ? detectGeometryType(groupData) : null;
-  });
+  const currentGroupGeometryType = computed(() =>
+    entityGroup.value ? (bridges.value[entityGroup.value]?.geometryType ?? null) : null,
+  );
 
   const isDirty = computed(() => {
     for (const groupChanges of changes.value.values()) {
@@ -331,21 +294,50 @@ export const useEditorStore = defineStore("editor", () => {
   function initWgs84Features(): void {
     if (!dataset.value?.data) {
       wgs84Features.value = {};
+      bridges.value = {};
+      idIndex.value = {};
+      nextId.value = {};
       return;
     }
     const epsg = dataset.value.epsg_code ?? null;
-    const result: Record<string, Feature[]> = {};
-    for (const [groupName, groupDataRaw] of Object.entries(dataset.value.data)) {
-      const groupData = groupDataRaw as Record<string, unknown[]>;
-      const fc = groupToFeatureCollection(groupData, epsg);
-      result[groupName] = fc.features;
+    const newBridges: Record<string, GeometryBridge> = {};
+    const features: Record<string, Feature[]> = {};
+    const index: Record<string, Map<number, number>> = {};
+    const counters: Record<string, number> = {};
+
+    for (const [groupName, groupData] of Object.entries(dataset.value.data)) {
+      const bridge = createGeometryBridge(groupData, epsg);
+      if (!bridge) continue;
+
+      newBridges[groupName] = bridge;
+      features[groupName] = bridge.entityDataToWgs84Features(groupData);
+
+      const ids = groupData.id ?? [];
+      const map = new Map<number, number>();
+      let max = 0;
+      for (let i = 0; i < ids.length; i++) {
+        map.set(ids[i], i);
+        if (ids[i] > max) max = ids[i];
+      }
+      index[groupName] = map;
+      counters[groupName] = max + 1;
     }
-    wgs84Features.value = result;
+
+    bridges.value = newBridges;
+    wgs84Features.value = features;
+    idIndex.value = index;
+    nextId.value = counters;
+  }
+
+  function reindex(groupName: string) {
+    const ids = (dataset.value?.data?.[groupName]?.["id"] as number[]) ?? [];
+    const map = new Map<number, number>();
+    for (let i = 0; i < ids.length; i++) map.set(ids[i], i);
+    idIndex.value = { ...idIndex.value, [groupName]: map };
   }
 
   function rowIndex(groupName: string, id: number) {
-    const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
-    return ((groupData?.["id"] as number[]) ?? []).indexOf(id);
+    return idIndex.value[groupName]?.get(id) ?? -1;
   }
 
   function getCurrentValue(groupName: string, id: number, prop: string): PatchValue {
@@ -355,22 +347,12 @@ export const useEditorStore = defineStore("editor", () => {
     return ((groupData?.[prop] as unknown[])?.[index] ?? null) as PatchValue;
   }
 
-  function getOriginalGeomColumns(groupName: string, id: number): Record<string, unknown> {
-    const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
-    if (!groupData) return {};
-    const geometryType = detectGeometryType(groupData);
-    if (!geometryType) return {};
+  function getOriginalGeomColumns(groupName: string, id: number): GeometryData {
+    const groupData = dataset.value?.data?.[groupName];
+    const bridge = bridges.value[groupName];
     const dataIndex = rowIndex(groupName, id);
-    if (dataIndex === -1) return {};
-
-    if (geometryType === "point") {
-      return {
-        "geometry.x": (groupData["geometry.x"] as number[])[dataIndex],
-        "geometry.y": (groupData["geometry.y"] as number[])[dataIndex],
-      };
-    }
-    const geometryKey = getGeometryKey(groupData, geometryType);
-    return { [geometryKey]: (groupData[geometryKey] as unknown[])[dataIndex] };
+    if (!groupData || !bridge || dataIndex === -1) return {}; // -1 means new entity
+    return bridge.getGeometryData(groupData, dataIndex);
   }
 
   function onGeometryEdit(
@@ -388,13 +370,11 @@ export const useEditorStore = defineStore("editor", () => {
     );
     if (!isFinal) return;
 
-    const epsg = dataset.value?.epsg_code ?? null;
     const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
     if (!groupData) return;
 
-    const geometryType = detectGeometryType(groupData);
-    if (!geometryType) return;
-    const geometryKey = getGeometryKey(groupData, geometryType);
+    const bridge = bridges.value[groupName];
+    if (!bridge) return;
 
     for (const featureIndex of featureIndexes) {
       const feature = updatedFeatures[featureIndex];
@@ -402,12 +382,7 @@ export const useEditorStore = defineStore("editor", () => {
       const id = (feature as any).properties?.__id as number | undefined;
       if (id === undefined) continue;
 
-      const newGeometryColumns = extractGeometryColumns(
-        feature as any,
-        geometryType,
-        geometryKey,
-        epsg,
-      );
+      const newGeometryColumns = bridge.featureToGeometryData(feature);
       const oldGeometryColumns = getOriginalGeomColumns(groupName, id);
 
       // upgrade geometryChanges
@@ -425,8 +400,6 @@ export const useEditorStore = defineStore("editor", () => {
         kind: "geometry",
         entityGroup: groupName,
         id,
-        geometryType,
-        geometryKey,
         oldGeometryColumns,
         newGeometryColumns,
       });
@@ -434,8 +407,6 @@ export const useEditorStore = defineStore("editor", () => {
   }
 
   function applyGeometry(cmd: GeometryCommand, geomToApply: Record<string, unknown>) {
-    const epsg = dataset.value?.epsg_code ?? null;
-
     // Checks if we are restoring the original geometry
     const isNew = newEntityIds.value.get(cmd.entityGroup)?.has(cmd.id) ?? false;
     const originalGeom = getOriginalGeomColumns(cmd.entityGroup, cmd.id);
@@ -460,12 +431,8 @@ export const useEditorStore = defineStore("editor", () => {
     const currentFeatures = wgs84Features.value[cmd.entityGroup];
     const featureIndex = rowIndex(cmd.entityGroup, cmd.id);
     if (currentFeatures && currentFeatures[featureIndex]) {
-      const newGeom = geomColumnsToWgs84Geometry(
-        geomToApply,
-        cmd.geometryType,
-        cmd.geometryKey,
-        epsg,
-      );
+      const newGeom = bridges.value[cmd.entityGroup]?.geometryDataToGeometry(geomToApply);
+      if (!newGeom) return;
       const updatedFeatures = [...currentFeatures];
       updatedFeatures[featureIndex] = {
         ...updatedFeatures[featureIndex],
@@ -589,6 +556,8 @@ export const useEditorStore = defineStore("editor", () => {
           (groupData[key] as unknown[]).splice(dataIndex, 0, value);
         }
       }
+      reindex(entityGroup);
+      triggerRef(dataset);
     }
 
     // Restore wgs84Feature at its original index
@@ -623,7 +592,7 @@ export const useEditorStore = defineStore("editor", () => {
       | Record<string, unknown[]>
       | undefined;
     const ids: number[] = (groupData?.["id"] as number[]) ?? [];
-    const dataIndex = ids.indexOf(cmd.id);
+    const dataIndex = rowIndex(cmd.entityGroup, cmd.id);
     const originalValue =
       dataIndex !== -1 ? (groupData?.[cmd.property] as unknown[])?.[dataIndex] : undefined;
 
@@ -709,20 +678,18 @@ export const useEditorStore = defineStore("editor", () => {
     }
   }
 
-  function addEntity(groupName: string, newFeature: Feature, epsg: number | null): void {
+  function addEntity(groupName: string, newFeature: Feature): void {
     const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
     if (!groupData) return;
 
-    const geometryType = detectGeometryType(groupData);
-    if (!geometryType) return;
-    const geometryKey = getGeometryKey(groupData, geometryType);
+    const bridge = bridges.value[groupName];
+    if (!bridge) return;
 
-    // Generate a unit Id (by using the max of existing ids + 1).
-    const ids = (groupData["id"] as number[]) ?? [];
-    const newId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
+    const newId = nextId.value[groupName] ?? 1;
+    nextId.value[groupName] = newId + 1;
 
     // extract geometry ind dataset CRS
-    const geomColumns = extractGeometryColumns(newFeature as any, geometryType, geometryKey, epsg);
+    const geomColumns = bridge.featureToGeometryData(newFeature);
 
     // record positions before inserting (for undo purposes)
     const index = ids.length;
@@ -734,6 +701,8 @@ export const useEditorStore = defineStore("editor", () => {
       const geomValue = geomColumns[key];
       (groupData[key] as unknown[]).push(geomValue !== undefined ? geomValue : null);
     }
+    idIndex.value[groupName]?.set(newId, index);
+    triggerRef(dataset);
 
     // Update wgs84Features with the correct Id in properties
     const newFeatureWithId = {
@@ -801,6 +770,7 @@ export const useEditorStore = defineStore("editor", () => {
     if (attr in groupData) return false;
     const size = (groupData["id"] as unknown[])?.length ?? 0;
     groupData[attr] = new Array(size).fill(null);
+    triggerRef(dataset);
     if (!newAttributeTypes.value.has(groupName)) newAttributeTypes.value.set(groupName, new Map());
     newAttributeTypes.value.get(groupName)!.set(attr, type);
     return true;
@@ -852,6 +822,8 @@ export const useEditorStore = defineStore("editor", () => {
       for (const key of Object.keys(groupData)) {
         (groupData[key] as unknown[]).splice(index, 1);
       }
+      reindex(groupName);
+      triggerRef(dataset);
     }
 
     // Remove the feature from wgs84Features

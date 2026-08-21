@@ -92,7 +92,7 @@ export function useEditorlayers() {
               const newFeatureIndx: number = featureIndexes[0] ?? updatedData.features.length - 1;
               const newFeature = updatedData.features[newFeatureIndx];
               if (newFeature) {
-                store.addEntity(groupName, newFeature, store.dataset?.epsg_code ?? null);
+                store.addEntity(groupName, newFeature);
               }
             } else {
               store.onGeometryEdit(groupName, updatedData.features, featureIndexes, editType);
