@@ -104,14 +104,14 @@ export class PointBridge extends BaseGeometryBridge {
 
   getGeometryData(group: GroupData, dataIndex: number): GeometryData {
     return {
-      "geometry.x": (group["geometry.x"] as number[])[dataIndex],
-      "geometry.y": (group["geometry.y"] as number[])[dataIndex],
+      "geometry.x": (group["geometry.x"] as number[])[dataIndex]!,
+      "geometry.y": (group["geometry.y"] as number[])[dataIndex]!,
     };
   }
 
   featureToGeometryData(feature: Feature): GeometryData {
-    const [lon, lat] = (feature.geometry as Point)?.Coordinates ?? [0, 0];
-    const [x, y] = reverseTransform([lon, lat], this.crs);
+    const lonLat = ((feature.geometry as Point)?.coordinates ?? [0, 0]) as [number, number];
+    const [x, y] = reverseTransform(lonLat, this.crs);
     return { "geometry.x": x, "geometry.y": y };
   }
 
