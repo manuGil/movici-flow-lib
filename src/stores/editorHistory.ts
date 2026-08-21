@@ -4,7 +4,7 @@ on the dataset editor.
 */
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import type { GeometryType } from "@movici-flow-lib/utils/geoJsonBridge";
+import type { GeometryData } from "@movici-flow-lib/utils/geoJsonBridge";
 import type { Feature } from "geojson";
 
 export interface UpdatePropertyCommand {
@@ -20,10 +20,8 @@ export interface GeometryCommand {
   kind: "geometry";
   entityGroup: string;
   id: number;
-  geometryType: GeometryType;
-  geometryKey: string;
-  oldGeometryColumns: Record<string, unknown>;
-  newGeometryColumns: Record<string, unknown>;
+  oldGeometryColumns: GeometryData;
+  newGeometryColumns: GeometryData;
 }
 
 export interface DeleteCommand {
