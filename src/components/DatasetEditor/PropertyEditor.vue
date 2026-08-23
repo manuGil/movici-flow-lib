@@ -1,6 +1,6 @@
 <template>
   <div class="property-editor">
-    <div v-if="!entity" class="has-text-grey is-size-7 p-4">Select and entity on the map</div>
+    <div v-if="!entity" class="has-text-grey is-size-7 p-4">Select an entity on the map</div>
     <div v-else>
       <div
         v-for="(value, key) in editableProperties"
@@ -83,19 +83,8 @@ const emit = defineEmits<{
 }>();
 
 const store = useEditorStore();
-
-const isNewEntity = computed(() => {
-  if (!props.entityGroup || store.selectedId === null) return false;
-  return store.newEntityIds.get(props.entityGroup)?.has(store.selectedId) ?? false;
-});
-
 const editableProperties = computed(() => {
-  if (!props.entity) return {};
-  const result: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(props.entity)) {
-    result[k] = v;
-  }
-  return result;
+  return props.entity ?? {};
 });
 
 function isGeometry(key: string): boolean {
@@ -131,7 +120,7 @@ function inputKind(key: string): "enum" | "boolean" | "number" | "readonly" | "t
 }
 
 function displayValue(key: string): string {
-  if (key == "id" && isNewEntity.value) return "-"; // new entities get an Id from the backend.
+  if (key == "id" && store.selectedIsNew) return "-"; // new entities get an Id from the backend.
   const v = currentValue(key);
   return v === null || v === undefined ? "" : String(v);
 }

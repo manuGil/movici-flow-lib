@@ -1,5 +1,5 @@
 /*
-A store to keep tack changes to a dataset during editing. Enables undo and redo 
+A store to keep track changes to a dataset during editing. Enables undo and redo 
 on the dataset editor.
 */
 import { defineStore } from "pinia";
@@ -43,7 +43,7 @@ export interface CreateCommand {
   dataIndex: number;
   rowData: Record<string, unknown>;
   wgs84Feature: Feature;
-  geometryColumns: Record<string, unknown>;
+  geometryColumns: GeometryData;
 }
 
 export type Command = UpdatePropertyCommand | GeometryCommand | DeleteCommand | CreateCommand;

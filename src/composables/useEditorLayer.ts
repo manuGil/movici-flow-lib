@@ -23,7 +23,7 @@ const ENTITY_GROUP_PALETTE = [
 
 type RGBA = [number, number, number, number];
 
-export function useEditorlayers() {
+export function useEditorLayer() {
   const store = useEditorStore();
 
   const accessorCache = new Map<string, { getFillColor: unknown; getLineColor: unknown }>();

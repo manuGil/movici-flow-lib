@@ -3,13 +3,7 @@
     <EditorToolbar />
     <div class="editor-body">
       <div class="editor-map">
-        <Deck
-          ref="deckRef"
-          :layers="layers"
-          :camera="camera"
-          :basemap="basemap"
-          @update:camera="camera = $event"
-        >
+        <Deck :layers="layers" :camera="camera" :basemap="basemap" @update:camera="camera = $event">
           <template #control-left="{ onViewstateChange }">
             <MapControlNavigation
               :model-value="camera"
@@ -21,7 +15,7 @@
           </template>
           <!-- Hack to leave click registration 'on' because Deck doesn't provide direct event access-->
           <template #control-zero="{ on }">
-            <span ref="deckOnRef" :data-on="registerOn(on)" style="display: none" />
+            <span :data-on="registerOn(on)" style="display: none" />
           </template>
         </Deck>
       </div>
@@ -33,7 +27,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
 import { useEditorStore } from "../stores/editor";
-import { useEditorlayers } from "../composables/useEditorLayer";
+import { useEditorLayer } from "../composables/useEditorLayer";
 import { transformBBox } from "../crs";
 import type { DeckCamera, DeckEventCallback, ShortDataset } from "../types";
 import { useMoviciSettings } from "../baseComposables/useMoviciSettings";
@@ -49,17 +43,12 @@ const props = defineProps<{
   modelValue: ShortDataset;
 }>();
 
-const { currentDataset, datasets } = useReactiveSummary({
-  datasetOnly: true,
-});
-
 const store = useEditorStore();
 
-const { layers } = useEditorlayers();
+const { layers } = useEditorlayer();
 
 const DEFAULT_VIEWSTATE = useMoviciSettings().settings.defaultViewState;
 const camera = ref<DeckCamera>({ viewState: DEFAULT_VIEWSTATE });
-const initialCamera = ref<DeckCamera>();
 const basemap = ref("mapbox://styles/mapbox/light-v10"); // TODO: replace with basemap selector
 
 // Registering a click handler on the Deck component's 'on' method.
@@ -76,7 +65,6 @@ function registerOn(on: (event: "click", callback: Record<string, DeckEventCallb
       if (entityId !== undefined && info != null) {
         const layerId: string = (info as any).layer?.id ?? "";
 
-        // TODO: find a more reliable way to control group selection
         const groupMatch = layerId.match(/^editable-(.+)$/);
         const clickedGroup = groupMatch?.[1] ?? store.entityGroup ?? "";
         if (clickedGroup && clickedGroup !== store.entityGroup) {
@@ -132,7 +120,6 @@ async function loadAndInit(uuid: string) {
     const bbox = padBBox(rawBbox);
     const cam = { bbox: { coords: bbox, fillRatio: 0.7 } };
     camera.value = cam;
-    initialCamera.value = cam;
   }
 }
 

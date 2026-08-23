@@ -23,7 +23,7 @@ const store = useEditorStore();
 const baseModes: { key: EditModeKey; label: string; icon: string }[] = [
   { key: "view", label: "Select", icon: "mouse-pointer" },
   { key: "select-rectangle", label: "Rectangle select", icon: "vector-square" },
-  { key: "modify", label: "Edit verticies", icon: "project-diagram" },
+  { key: "modify", label: "Edit vertices", icon: "project-diagram" },
   { key: "translate", label: "Move feature", icon: "arrows-alt" },
   { key: "delete", label: "Delete feature", icon: "trash" },
 ];

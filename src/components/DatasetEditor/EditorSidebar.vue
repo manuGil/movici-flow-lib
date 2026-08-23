@@ -101,7 +101,7 @@ function onAddAttribute() {
     newAttrName.value = "";
     addAttrError.value = null;
   } else {
-    addAttrError.value = `Cannot add attribute '${name}': name is reseved or already exists'`;
+    addAttrError.value = `Cannot add attribute '${name}': name is reserved or already exists`;
   }
 }
 
@@ -118,7 +118,7 @@ function onAddEntityGroup() {
     newGroupName.value = "";
     addGroupError.value = null;
   } else {
-    addGroupError.value = `Cannot add entitty group '${name}': it already exists`;
+    addGroupError.value = `Cannot add entity group '${name}': it already exists`;
   }
 }
 
