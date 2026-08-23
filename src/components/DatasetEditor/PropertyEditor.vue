@@ -83,19 +83,8 @@ const emit = defineEmits<{
 }>();
 
 const store = useEditorStore();
-
-// const isNewEntity = computed(() => {
-//   if (!props.entityGroup || store.selectedId === null) return false;
-//   return store.newEntityIds.get(props.entityGroup)?.has(store.selectedId) ?? false;
-// });
-
 const editableProperties = computed(() => {
-  if (!props.entity) return {};
-  const result: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(props.entity)) {
-    result[k] = v;
-  }
-  return result;
+  return props.entity ?? {};
 });
 
 function isGeometry(key: string): boolean {

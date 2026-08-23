@@ -154,7 +154,9 @@ export const useEditorStore = defineStore("editor", () => {
     for (const id of deletedEntityIds.value.values()) {
       if (id.size > 0) return true;
     }
-    if (newEntityGroups.value.size > 0) return true;
+    // A new entity group is deliberately NOT dirty on its own: the backend rejects
+    // groups with zero entities. It becomes dirty via geometryChanges as soon as
+    // addEntity puts the first entity in it, and generatePatch skips empty groups.
     return false;
   });
 

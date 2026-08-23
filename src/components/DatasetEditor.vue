@@ -27,7 +27,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
 import { useEditorStore } from "../stores/editor";
-import { useEditorlayers } from "../composables/useEditorLayer";
+import { useEditorLayer } from "../composables/useEditorLayer";
 import { transformBBox } from "../crs";
 import type { DeckCamera, DeckEventCallback, ShortDataset } from "../types";
 import { useMoviciSettings } from "../baseComposables/useMoviciSettings";
@@ -45,7 +45,7 @@ const props = defineProps<{
 
 const store = useEditorStore();
 
-const { layers } = useEditorlayers();
+const { layers } = useEditorlayer();
 
 const DEFAULT_VIEWSTATE = useMoviciSettings().settings.defaultViewState;
 const camera = ref<DeckCamera>({ viewState: DEFAULT_VIEWSTATE });
@@ -65,7 +65,6 @@ function registerOn(on: (event: "click", callback: Record<string, DeckEventCallb
       if (entityId !== undefined && info != null) {
         const layerId: string = (info as any).layer?.id ?? "";
 
-        // TODO: find a more reliable way to control group selection
         const groupMatch = layerId.match(/^editable-(.+)$/);
         const clickedGroup = groupMatch?.[1] ?? store.entityGroup ?? "";
         if (clickedGroup && clickedGroup !== store.entityGroup) {
