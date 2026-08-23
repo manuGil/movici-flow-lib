@@ -174,8 +174,7 @@ export const useEditorStore = defineStore("editor", () => {
     return count;
   });
 
-  const patch = computed<DatasetPatch>(() => {
-    // This should be moved, see related issue.
+  function generatePatch(): DatasetPatch {
     const data: PatchData = {};
 
     // Collect all entity groups that have changes
@@ -228,7 +227,7 @@ export const useEditorStore = defineStore("editor", () => {
       data[entityGroup] = group;
     }
     return { nulls_overwrite: hasClears, data };
-  });
+  }
 
   // Guards against races when datasets are switched quickly
   let loadToken = 0;
@@ -653,7 +652,7 @@ export const useEditorStore = defineStore("editor", () => {
       if (!flowStore.backend.dataset.patch) {
         throw new Error("Dataset editor service is not configured");
       }
-      await flowStore.backend.dataset.patch(datasetUUID.value, patch.value);
+      await flowStore.backend.dataset.patch(datasetUUID.value, generatePatch());
       // Reload dataset to reflect the saved values
       await loadDataset(datasetUUID.value);
       // Restore selection -> loadDataset resets both to null
@@ -913,7 +912,7 @@ export const useEditorStore = defineStore("editor", () => {
     currentGroupGeometryType,
     isDirty,
     dirtyCount,
-    patch,
+    generatePatch,
     loadDataset,
     initWgs84Features,
     onGeometryEdit,
@@ -935,3 +934,5 @@ export const useEditorStore = defineStore("editor", () => {
     save,
   };
 });
+
+// continue here: Check: Drag a point and watch the frame rate. This is where steps 15 and 16 show up.
