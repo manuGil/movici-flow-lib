@@ -669,7 +669,7 @@ export const useEditorStore = defineStore("editor", () => {
     if (!bridge) return;
 
     const newId = nextId.value[groupName] ?? 1;
-    nextId.value[groupName] = newId + 1;
+    nextId.value = { ...nextId.value, [groupName]: newId + 1 };
 
     // extract geometry in dataset CRS
     const geomColumns = bridge.featureToGeometryData(newFeature);
@@ -684,7 +684,7 @@ export const useEditorStore = defineStore("editor", () => {
       const geomValue = geomColumns[key];
       (groupData[key] as unknown[]).push(geomValue !== undefined ? geomValue : null);
     }
-    idIndex.value[groupName]?.set(newId, index);
+    reindex(groupName);
     triggerRef(dataset);
 
     // Update wgs84Features with the correct Id in properties
