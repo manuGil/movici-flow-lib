@@ -34,7 +34,6 @@ import {
   type Command,
   type UpdatePropertyCommand,
   type GeometryCommand,
-  type DeleteCommand,
   type CreateCommand,
 } from "@movici-flow-lib/stores/editorHistory";
 
@@ -61,7 +60,7 @@ export const useEditorStore = defineStore("editor", () => {
   const idIndex = shallowRef<Record<string, Map<number, number>>>({});
   const nextId = shallowRef<Record<string, number>>({});
   const wgs84Features = shallowRef<Record<string, Feature[]>>({});
-  // Ids of entities created in an editiong session (new entities)
+  // Ids of entities created in an editing session (new entities)
   const newEntityIds = ref<Map<string, Set<number>>>(new Map());
   // Ids of existing entities deleted in an editing session
   const deletedEntityIds = ref<Map<string, Set<number>>>(new Map());
@@ -106,8 +105,7 @@ export const useEditorStore = defineStore("editor", () => {
     for (const key of Object.keys(groupData)) {
       row[key] = (groupData[key] as unknown[])[index];
     }
-    // Apply pending chenges on top
-    // TODO: why is this necessary? Shouldn't pending changes already be applied to the entities in the store? Check if this is necessary and if so, add tests for this behavior
+    // Apply pending changes on top
     const pending = changes.value.get(entityGroup.value)?.get(selectedId.value);
     if (pending) {
       Object.assign(row, pending);
@@ -120,7 +118,7 @@ export const useEditorStore = defineStore("editor", () => {
     return newEntityIds.value.get(entityGroup.value)?.has(selectedId.value) ?? false;
   });
 
-  // Bouding box [minX, minY, maxX, maxY] in the dataset CRS from geometry columns.
+  // Bounding box [minX, minY, maxX, maxY] in the dataset CRS from geometry columns.
   // It handles point (geometry.x/y), line (geometry.linestring_2d/3d) and polygon.
   const boundingBox = computed<[number, number, number, number] | null>(() => {
     if (!dataset.value?.data) return null;
@@ -162,11 +160,11 @@ export const useEditorStore = defineStore("editor", () => {
 
   const dirtyCount = computed(() => {
     let count = 0;
-    for (const groupChanes of changes.value.values()) {
-      count += groupChanes.size;
+    for (const groupChanges of changes.value.values()) {
+      count += groupChanges.size;
     }
-    for (const groupGeomChanes of geometryChanges.value.values()) {
-      count += groupGeomChanes.size;
+    for (const groupGeomChanges of geometryChanges.value.values()) {
+      count += groupGeomChanges.size;
     }
     for (const ids of deletedEntityIds.value.values()) {
       count += ids.size;
@@ -200,7 +198,7 @@ export const useEditorStore = defineStore("editor", () => {
       const deletedIds = deletedEntityIds.value.get(entityGroup) ?? new Set<number>();
       const newIds = newEntityIds.value.get(entityGroup) ?? new Set<number>();
       const editedIds = new Set([...propChanges.keys(), ...geomChanges.keys(), ...newIds]);
-      // Collects IDs of edited entities firts, then IDs of deleted entities.
+      // Collects IDs of edited entities first, then IDs of deleted entities.
       const allIds = [...editedIds, ...deletedIds];
       if (allIds.length === 0) continue;
 
@@ -265,9 +263,7 @@ export const useEditorStore = defineStore("editor", () => {
     datasetUUID.value = uuid;
     dataset.value = result as DatasetWithData;
     const groups = Object.keys(result.data ?? {});
-    if (groups.length > 0) {
-      entityGroup.value = groups[0] ?? null;
-    }
+    entityGroup.value = groups[0] ?? null;
     // Ensures building WGS84 features is called in the right order
     try {
       await ensureProjection(dataset.value.epsg_code);
@@ -372,7 +368,7 @@ export const useEditorStore = defineStore("editor", () => {
       const newGeometryColumns = bridge.featureToGeometryData(feature);
       const oldGeometryColumns = getOriginalGeomColumns(groupName, id);
 
-      // upgrade geometryChanges
+      // update geometryChanges
       if (!geometryChanges.value.has(groupName)) {
         geometryChanges.value.set(groupName, new Map());
       }
@@ -476,7 +472,6 @@ export const useEditorStore = defineStore("editor", () => {
     // Determine old value (from pending changes or original data)
     const pending = changes.value.get(entityGroup)?.get(id);
     const groupData = dataset.value?.data?.[entityGroup] as Record<string, unknown[]> | undefined;
-    const ids: number[] = (groupData?.["id"] as number[]) ?? [];
     const dataIndex = rowIndex(entityGroup, id);
     const originalValue =
       dataIndex !== -1 ? (groupData?.[prop] as unknown[])?.[dataIndex] : undefined;
@@ -503,7 +498,7 @@ export const useEditorStore = defineStore("editor", () => {
     }
   }
 
-  function revertProperty(entityGroup: string, id: number, prop: string, skipHistory = false) {
+  function revertProperty(entityGroup: string, id: number, prop: string) {
     const groupChanges = changes.value.get(entityGroup);
     if (!groupChanges) return;
     const entityChanges = groupChanges.get(id);
@@ -535,7 +530,7 @@ export const useEditorStore = defineStore("editor", () => {
       pendingGeometryChanges = {},
     } = params;
 
-    // Restore the entity row into columna data at its original index
+    // Restore the entity row into columnar data at its original index
     const groupData = dataset.value?.data?.[entityGroup] as Record<string, unknown[]> | undefined;
     if (groupData) {
       for (const [key, value] of Object.entries(rowData)) {
@@ -555,11 +550,11 @@ export const useEditorStore = defineStore("editor", () => {
     }
 
     // Restore any pending property/geometry changes
-    if (pendingChanges) {
+    if (Object.keys(pendingChanges).length) {
       if (!changes.value.has(entityGroup)) changes.value.set(entityGroup, new Map());
       changes.value.get(entityGroup)!.set(id, { ...pendingChanges });
     }
-    if (pendingGeometryChanges) {
+    if (Object.keys(pendingGeometryChanges).length) {
       if (!geometryChanges.value.has(entityGroup))
         geometryChanges.value.set(entityGroup, new Map());
       geometryChanges.value.get(entityGroup)!.set(id, { ...pendingGeometryChanges });
@@ -578,7 +573,6 @@ export const useEditorStore = defineStore("editor", () => {
     const groupData = dataset.value?.data?.[cmd.entityGroup] as
       | Record<string, unknown[]>
       | undefined;
-    const ids: number[] = (groupData?.["id"] as number[]) ?? [];
     const dataIndex = rowIndex(cmd.entityGroup, cmd.id);
     const originalValue =
       dataIndex !== -1 ? (groupData?.[cmd.property] as unknown[])?.[dataIndex] : undefined;
@@ -675,7 +669,7 @@ export const useEditorStore = defineStore("editor", () => {
     const newId = nextId.value[groupName] ?? 1;
     nextId.value[groupName] = newId + 1;
 
-    // extract geometry ind dataset CRS
+    // extract geometry in dataset CRS
     const geomColumns = bridge.featureToGeometryData(newFeature);
 
     // record positions before inserting (for undo purposes)
@@ -735,7 +729,7 @@ export const useEditorStore = defineStore("editor", () => {
       geometryColumns: { ...geomColumns },
     });
 
-    // Select the new enity and switch back to the view mode
+    // Select the new entity and switch back to the view mode
     entityGroup.value = groupName;
     selectedId.value = newId;
     editModeKey.value = "view";
@@ -838,12 +832,12 @@ export const useEditorStore = defineStore("editor", () => {
       deletedEntityIds.value.get(groupName)!.add(id);
     }
 
-    // Clear selection if thsi entity was selected
+    // Clear selection if entity was selected
     if (selectedId.value === id && entityGroup.value === groupName) {
       selectedId.value = null;
     }
 
-    // Push to history fo undo/redo works. Skip for redo replays
+    // Push to history of undo/redo works. Skip for redo replays
     // index === -1 means nothing was removed
     if (!skipHistory && index !== -1) {
       historyStore.push({
@@ -882,7 +876,7 @@ export const useEditorStore = defineStore("editor", () => {
 
     // Reset wgs84Features from original dataset
     initWgs84Features();
-    // Delet new attributes from groupData
+    // Delete new attributes from groupData
     for (const [groupName, attrs] of newAttributeTypes.value) {
       const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
       if (groupData) for (const attr of attrs.keys()) delete groupData[attr];
@@ -900,7 +894,6 @@ export const useEditorStore = defineStore("editor", () => {
     wgs84Features,
     newEntityIds,
     newAttributeTypes,
-    deletedEntityIds,
     multiSelectedIds,
     saving,
     error,
@@ -914,7 +907,6 @@ export const useEditorStore = defineStore("editor", () => {
     dirtyCount,
     generatePatch,
     loadDataset,
-    initWgs84Features,
     onGeometryEdit,
     addEntity,
     addAttribute,
@@ -923,16 +915,12 @@ export const useEditorStore = defineStore("editor", () => {
     setEditMode,
     setMultiSelection,
     selectEntityGroup,
-    selectEntity,
     selectedIsNew,
+    selectEntity,
     clearSelection,
     updateProperty,
-    revertProperty,
-    clearChanges,
     undo,
     redo,
     save,
   };
 });
-
-// continue here: Check: Drag a point and watch the frame rate. This is where steps 15 and 16 show up.
