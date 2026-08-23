@@ -136,8 +136,8 @@ export const useEditorStore = defineStore("editor", () => {
       found = true;
       if (bounds[0] < minX) minX = bounds[0];
       if (bounds[1] < minY) minY = bounds[1];
-      if (bounds[2] < maxX) maxX = bounds[2];
-      if (bounds[3] < maxY) maxY = bounds[3];
+      if (bounds[2] > maxX) maxX = bounds[2];
+      if (bounds[3] > maxY) maxY = bounds[3];
     }
     return found ? [minX, minY, maxX, maxY] : null;
   });
