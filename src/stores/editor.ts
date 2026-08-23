@@ -156,6 +156,7 @@ export const useEditorStore = defineStore("editor", () => {
     for (const id of deletedEntityIds.value.values()) {
       if (id.size > 0) return true;
     }
+    if (newEntityGroups.value.size > 0) return true;
     return false;
   });
 
@@ -244,6 +245,7 @@ export const useEditorStore = defineStore("editor", () => {
     newEntityIds.value = new Map();
     deletedEntityIds.value = new Map();
     newAttributeTypes.value = new Map();
+    newEntityGroups.value = new Set();
     historyStore.clear();
     error.value = null;
 
@@ -769,7 +771,7 @@ export const useEditorStore = defineStore("editor", () => {
     const groupName = name.trim();
     if (!data || !groupName || groupName in data) return false;
 
-    const group: EntityGroupData<unknown[]> = { id: [] };
+    const group: EntityGroupData<unknown> = { id: [] };
     for (const col of DEFAULT_GEOMETRY_COLUMNS[geometryType]) group[col] = [];
 
     const bridge = createGeometryBridge(group, dataset.value?.epsg_code ?? null);
@@ -867,6 +869,18 @@ export const useEditorStore = defineStore("editor", () => {
     newEntityIds.value = new Map();
     deletedEntityIds.value = new Map();
     historyStore.clear();
+
+    // Drop entity groups created in a session before rebuilding state
+    const data = dataset.value?.data;
+    if (data) {
+      for (const groupName of newEntityGroups.value) {
+        delete data[groupName];
+        if (entityGroup.value === groupName) entityGroup.value = null;
+      }
+      triggerRef(dataset);
+    }
+    newEntityGroups.value = new Set();
+
     // Reset wgs84Features from original dataset
     initWgs84Features();
     // Delet new attributes from groupData

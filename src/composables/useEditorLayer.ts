@@ -23,23 +23,23 @@ const ENTITY_GROUP_PALETTE = [
 
 type RGBA = [number, number, number, number];
 
-const accessorCache = new Map<string, { getFillColor: unknown; getLineColor: unknown }>();
-function accessorFor(grouName: string, fill: RGBA, line: RGBA) {
-  let cached = accessorCache.get(grouName);
-  if (!cached) {
-    cached = {
-      getFillColor: (_f: unknown, isSelected: boolean) => (isSelected ? HIGHLIGHT_COLOR : fill),
-      getLineColor: (_f: unknown, isSelected: boolean) => (isSelected ? HIGHLIGHT_COLOR : line),
-    };
-    accessorCache.set(grouName, cached);
-  }
-  return cached;
-}
-
 export function useEditorlayers() {
   const store = useEditorStore();
 
+  const accessorCache = new Map<string, { getFillColor: unknown; getLineColor: unknown }>();
   const collectionCache = new Map<string, { features: Feature[]; collection: FeatureCollection }>();
+
+  function accessorFor(groupName: string, fill: RGBA, line: RGBA) {
+    let cached = accessorCache.get(groupName);
+    if (!cached) {
+      cached = {
+        getFillColor: (_f: unknown, isSelected: boolean) => (isSelected ? HIGHLIGHT_COLOR : fill),
+        getLineColor: (_f: unknown, isSelected: boolean) => (isSelected ? HIGHLIGHT_COLOR : line),
+      };
+      accessorCache.set(groupName, cached);
+    }
+    return cached;
+  }
 
   function featureCollectionFor(groupName: string, features: Feature[]): FeatureCollection {
     const cached = collectionCache.get(groupName);
@@ -88,15 +88,21 @@ export function useEditorlayers() {
         const layerMode =
           isScopeMode && groupName !== store.entityGroup ? VIEW_MODE : store.editMode;
 
+        const { getFillColor, getLineColor } = accessorFor(
+          groupName,
+          groupFillColor,
+          groupLineColor,
+        );
+
         return new EditableGeoJsonLayer({
           id: `editable-${groupName}`,
+          data: featureCollection,
+          mode: layerMode,
           modeConfig: { formatTooltip: () => "" },
           selectedFeatureIndexes: selectedIndexes,
           pickable: true,
-          getFillColor: ((feature: any, isSelected: boolean) =>
-            isSelected ? HIGHLIGHT_COLOR : groupFillColor) as any,
-          getLineColor: ((feature: any, isSelected: boolean) =>
-            isSelected ? HIGHLIGHT_COLOR : groupLineColor) as any,
+          getFillColor: getFillColor as any,
+          getLineColor: getLineColor as any,
           getLineWidth: 3,
           lineWidthUnits: "pixels",
           getRadius: 6,
