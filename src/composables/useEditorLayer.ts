@@ -3,9 +3,9 @@ import { EditableGeoJsonLayer, ViewMode, SelectionLayer } from "@deck.gl-communi
 import type { Layer } from "@deck.gl/core";
 import { useEditorStore } from "../stores/editor";
 import { MoviciColors, hexToColorTriple } from "@movici-flow-lib/visualizers/maps/colorMaps";
+import type { Feature, FeatureCollection } from "geojson";
 
 const VIEW_MODE = new ViewMode();
-
 const HIGHLIGHT_COLOR: [number, number, number, number] = [255, 140, 0, 220];
 const EDIT_HANDLE_COLOR: [number, number, number, number] = [255, 255, 255, 255];
 const EDIT_HANDLE_OUTLINE_COLOR: [number, number, number, number] = [255, 140, 0, 255];
@@ -21,8 +21,33 @@ const ENTITY_GROUP_PALETTE = [
   MoviciColors.LIGHT_GREY,
 ];
 
+type RGBA = [number, number, number, number];
+
+const accessorCache = new Map<string, { getFillColor: unknown; getLineColor: unknown }>();
+function accessorFor(grouName: string, fill: RGBA, line: RGBA) {
+  let cached = accessorCache.get(grouName);
+  if (!cached) {
+    cached = {
+      getFillColor: (_f: unknown, isSelected: boolean) => (isSelected ? HIGHLIGHT_COLOR : fill),
+      getLineColor: (_f: unknown, isSelected: boolean) => (isSelected ? HIGHLIGHT_COLOR : line),
+    };
+    accessorCache.set(grouName, cached);
+  }
+  return cached;
+}
+
 export function useEditorlayers() {
   const store = useEditorStore();
+
+  const collectionCache = new Map<string, { features: Feature[]; collection: FeatureCollection }>();
+
+  function featureCollectionFor(groupName: string, features: Feature[]): FeatureCollection {
+    const cached = collectionCache.get(groupName);
+    if (cached?.features === features) return cached.collection;
+    const collection = { type: "FeatureCollection" as const, features };
+    collectionCache.set(groupName, { features, collection });
+    return collection;
+  }
 
   const layers = computed<Layer[]>(() => {
     if (!store.dataset?.data) return [];
@@ -40,7 +65,7 @@ export function useEditorlayers() {
 
         // use WGS84 features if available, otherwise fallback to empty feature collection
         const features = store.wgs84Features[groupName] ?? [];
-        const featureCollection = { type: "FeatureCollection" as const, features };
+        const featureCollection = featureCollectionFor(groupName, features);
 
         // Map entity id to feature index for selection (single selection and multi-selection)
         const selectedIndexes: number[] = [];
@@ -65,8 +90,6 @@ export function useEditorlayers() {
 
         return new EditableGeoJsonLayer({
           id: `editable-${groupName}`,
-          data: featureCollection,
-          mode: layerMode,
           modeConfig: { formatTooltip: () => "" },
           selectedFeatureIndexes: selectedIndexes,
           pickable: true,
@@ -98,9 +121,17 @@ export function useEditorlayers() {
               store.onGeometryEdit(groupName, updatedData.features, featureIndexes, editType);
             }
           }) as any,
-          updatedTrigger: {
-            getFillColor: [store.selectedId, store.multiSelectedIds, store.entityGroup],
-            getLineColor: [store.selectedId, store.multiSelectedIds, store.entityGroup],
+          updateTriggers: {
+            getFillColor: [
+              store.selectedId,
+              store.multiSelectedIds,
+              store.entityGroup === groupName,
+            ],
+            getLineColor: [
+              store.selectedId,
+              store.multiSelectedIds,
+              store.entityGroup === groupName,
+            ],
             data: [store.wgs84Features[groupName]],
             mode: [store.editMode, store.entityGroup],
           },
