@@ -81,10 +81,14 @@ export function useEditorlayers() {
           }
         }
 
-        // Draw/delete modes apply only to active group; other groups stay in view mode
-        const isScopeMode = ["draw-point", "draw-line", "draw-polygon", "delete"].includes(
-          store.editModeKey,
-        );
+        // Draw/delete/translate modes apply only to active group; other groups stay in view mode
+        const isScopeMode = [
+          "draw-point",
+          "draw-line",
+          "draw-polygon",
+          "delete",
+          "translate",
+        ].includes(store.editModeKey);
         const layerMode =
           isScopeMode && groupName !== store.entityGroup ? VIEW_MODE : store.editMode;
 
