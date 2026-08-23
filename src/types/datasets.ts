@@ -78,6 +78,21 @@ export interface DatasetData<T> {
   [entityGroup: string]: EntityGroupData<T>;
 }
 
+export type PatchValue = string | number | boolean | null | PatchValue[];
+export interface PatchEntityGroupData extends BaseEntityGroup {
+  deleted?: boolean[];
+  [attribute: string]: PatchValue[] | undefined;
+}
+
+export interface PatchData {
+  [entityGroup: string]: PatchEntityGroupData;
+}
+
+export interface DatasetPatch {
+  nulls_overwrite?: boolean;
+  data: PatchData;
+}
+
 export interface BaseEntityGroup {
   id: number[];
 }

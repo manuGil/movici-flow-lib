@@ -9,6 +9,7 @@ import type {
   DataAttribute,
   Update,
   UpdateWithData,
+  DatasetPatch,
   UUID,
   View,
   ViewCrudResponse,
@@ -73,6 +74,9 @@ export interface DatasetService {
   getState<T>(params: GetStateParams): Promise<DatasetWithData<T> | null>;
 
   getMetaData: (datasetUUID: UUID) => Promise<Dataset | null>;
+
+  // Capability for data editor.
+  patch?(datasetUUID: UUID, patch: DatasetPatch): Promise<void>;
 }
 
 export interface UserService {
@@ -90,7 +94,8 @@ export interface FetchRequestService {
   ): { url: string; options: RequestInit };
 }
 
-export type BackendCapability = "projects" | "geocode" | "user";
+export type BackendCapability = "projects" | "geocode" | "user" | "patchDatasets";
+
 export interface Backend {
   getCapabilities(): BackendCapability[];
   dataset: DatasetService;
