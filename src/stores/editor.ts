@@ -580,7 +580,7 @@ export const useEditorStore = defineStore("editor", () => {
       dataIndex !== -1 ? (groupData?.[cmd.property] as unknown[])?.[dataIndex] : undefined;
 
     if (cmd.oldValue === originalValue) {
-      revertProperty(cmd.entityGroup, cmd.id, cmd.property, true);
+      revertProperty(cmd.entityGroup, cmd.id, cmd.property);
     } else {
       updateProperty(cmd.entityGroup, cmd.id, cmd.property, cmd.oldValue, true);
     }

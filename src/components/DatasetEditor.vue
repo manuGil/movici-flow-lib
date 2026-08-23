@@ -45,7 +45,7 @@ const props = defineProps<{
 
 const store = useEditorStore();
 
-const { layers } = useEditorlayer();
+const { layers } = useEditorLayer();
 
 const DEFAULT_VIEWSTATE = useMoviciSettings().settings.defaultViewState;
 const camera = ref<DeckCamera>({ viewState: DEFAULT_VIEWSTATE });
