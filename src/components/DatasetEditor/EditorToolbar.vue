@@ -39,7 +39,7 @@
       size="small"
       variant="primary"
       :disabled="!store.isDirty || store.saving"
-      @click="store.save()"
+      @click="onSave"
     >
       Save
     </o-button>
@@ -50,18 +50,36 @@
 import { computed } from "vue";
 import { useEditorStore } from "@movici-flow-lib/stores/editor";
 import { useEditorHistoryStore } from "@movici-flow-lib/stores/editorHistory";
+import { useDialog } from "@movici-flow-lib/baseComposables/useDialog";
 
 const store = useEditorStore();
 const historyStore = useEditorHistoryStore();
+const { openDialog } = useDialog();
 
 const datasetDisplayName = computed(() => {
   const dataset = store.dataset;
   if (!dataset) return store.datasetUUID ?? "Dataset Editor";
   return dataset.display_name || dataset.name || store.datasetUUID || "Dataset Editor";
 });
+
+function onSave() {
+  const emptied = store.groupsToBeEmptied;
+  if (!emptied.length) return void store.save();
+
+  openDialog({
+    title: "Delete all entities?",
+    message:
+      `Saving will delete all entities from ${emptied.map((n) => `'$(n)''`).join(", ")}.` +
+      "This cannot be undone.",
+    variant: "danger",
+    hasIcon: true,
+    cancelExit: "Cancel",
+    confirmButtonText: "Yes. Save",
+    onConfirm: () => store.save(),
+  });
+}
 </script>
 
-<!-- TODO: use house-style or exend existing styles -->
 <style scoped lang="scss">
 .editor-toolbar {
   background: white;
