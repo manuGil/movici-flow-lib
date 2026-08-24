@@ -909,7 +909,7 @@ export const useEditorStore = defineStore("editor", () => {
     else hiddenGroups.value.add(name);
   }
   function isGroupVisible(name: string) {
-    return hiddenGroups.value.has(name);
+    return !hiddenGroups.value.has(name);
   }
 
   return {
