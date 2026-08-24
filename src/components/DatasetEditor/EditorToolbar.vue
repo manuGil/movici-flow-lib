@@ -69,11 +69,11 @@ function onSave() {
   openDialog({
     title: "Delete all entities?",
     message:
-      `Saving will delete all entities from ${emptied.map((n) => `'$(n)''`).join(", ")}.` +
-      "This cannot be undone.",
+      `Saving will delete all entities from ${emptied.map((n) => `'$(n)'`).join(", ")}.` +
+      `This cannot be undone.`,
     variant: "danger",
     hasIcon: true,
-    cancelExit: "Cancel",
+    cancelText: "Cancel",
     confirmButtonText: "Yes. Save",
     onConfirm: () => store.save(),
   });
