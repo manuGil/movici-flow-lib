@@ -70,7 +70,7 @@ function onSave() {
     title: "Delete entity group?",
     message:
       `Saving will delete all entities from ${emptied.map((n) => `'${n}'`).join(", ")} group. ` +
-      `It will also delete the entity group. ` +
+      `It will also delete the emptied entity group. ` +
       `This cannot be undone.`,
     variant: "danger",
     hasIcon: true,
