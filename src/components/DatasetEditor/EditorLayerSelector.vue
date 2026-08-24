@@ -6,7 +6,7 @@
           title="Layers"
           class="collapsed-icon"
           pack="far"
-          :icon="collapsed ? 'layer-group' : 'minus-square'"
+          :icon="collapsed ? 'stream' : 'minus-square'"
         />
         <label class="label is-flex-grow-1 mb-0" v-show="!collapsed">Layers</label>
       </div>
@@ -17,7 +17,7 @@
           <o-checkbox
             :model-value="store.isGroupVisible(name)"
             :disabled="name === store.entityGroup"
-            @update:modelvalue="(v: boolean) => store.setGroupVisible(name, v)"
+            @update:model-value="(v: boolean) => store.setGroupVisible(name, v)"
             size="small"
           >
             {{ formatEntityNames(name) }} ({{ entityCount(name) }})
