@@ -20,7 +20,7 @@
             @update:mpodelvalue="(v: boolean) => store.setGroupVisible(name, v)"
             size="small"
           >
-            {{ formatEntityName(name) }} ({{ enityCount(name) }})
+            {{ formatEntityNames(name) }} ({{ entityCount(name) }})
           </o-checkbox>
         </li>
         <li v-if="!store.entityGroupName.length" class="has-text-grey">No entity group</li>
@@ -29,12 +29,12 @@
   </WidgetContainer>
 </template>
 <script setup lang="ts">
-import WidgetContainer from "@movici-flow-lib/components/MapControls/WidgetContainer.vue";
+import WidgetContainer from "@movici-flow-lib/components/mapControls/WidgetContainer.vue";
 import { useEditorStore } from "@movici-flow-lib/stores/editor";
 import { snakeToSpaces, upperFirst } from "@movici-flow-lib/utils/filters";
 
 const store = useEditorStore();
-const formatEntityName = (name: string) => upperFirst(snakeToSpaces(name));
+const formatEntityNames = (name: string) => upperFirst(snakeToSpaces(name));
 const entityCount = (name: string) =>
   ((store.dataset?.data?.[name]?.["id"] as unknown[]) ?? []).length;
 </script>
