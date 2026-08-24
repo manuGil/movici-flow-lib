@@ -17,7 +17,7 @@
           <o-checkbox
             :model-value="store.isGroupVisible(name)"
             :disable="name === store.entityGroup"
-            @update:mpodelvalue="(v: boolean) => store.setGroupVisible(name, v)"
+            @update:modelvalue="(v: boolean) => store.setGroupVisible(name, v)"
             size="small"
           >
             {{ formatEntityNames(name) }} ({{ entityCount(name) }})
