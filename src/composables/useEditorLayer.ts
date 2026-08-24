@@ -100,6 +100,7 @@ export function useEditorLayer() {
 
         return new EditableGeoJsonLayer({
           id: `editable-${groupName}`,
+          visible: store.isGroupVisible(groupName),
           data: featureCollection,
           mode: layerMode,
           modeConfig: { formatTooltip: () => "" },
