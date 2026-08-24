@@ -69,7 +69,8 @@ function onSave() {
   openDialog({
     title: "Delete entity group?",
     message:
-      `Saving will delete all entities from ${emptied.map((n) => `'${n}'`).join(", ")} group, and delete the entity group as well. ` +
+      `Saving will delete all entities from ${emptied.map((n) => `'${n}'`).join(", ")} group. ` +
+      `It will also delete the entity group. ` +
       `This cannot be undone.`,
     variant: "danger",
     hasIcon: true,
