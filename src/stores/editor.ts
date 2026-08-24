@@ -922,6 +922,7 @@ export const useEditorStore = defineStore("editor", () => {
     currentGroupGeometryType,
     isDirty,
     dirtyCount,
+    groupsToBeEmptied,
     generatePatch,
     loadDataset,
     onGeometryEdit,
