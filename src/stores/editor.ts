@@ -174,6 +174,21 @@ export const useEditorStore = defineStore("editor", () => {
     return count;
   });
 
+  // Entity groups which will be left with zero entities before save
+  // will be completed deleted by the backen. This tracks which
+  // entity groups will be left emptied.
+  const groupsToBeEmptied = computed<string[]>(() => {
+    const data = dataset.value?.data;
+    if (!data) return [];
+    const emptied: string[] = [];
+    for (const [groupName, deletedIds] of deletedEntityIds.value) {
+      if (deletedIds.size === 0) continue;
+      const ids = (data[groupName]?.["id"] as number[] | undefined) ?? [];
+      if (ids.length === 0) emptied.push(groupName);
+    }
+    return emptied;
+  });
+
   function generatePatch(): DatasetPatch {
     const data: PatchData = {};
 
