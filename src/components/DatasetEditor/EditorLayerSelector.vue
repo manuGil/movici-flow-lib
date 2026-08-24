@@ -1,22 +1,22 @@
 <template>
   <WidgetContainer collapsable>
     <template #collapse-title="{ collapsed }">
-      <div class="is-flex is-flex-directon-row-reverse is-align-items-center is-clickable">
+      <div class="is-flex is-flex-direction-row-reverse is-align-items-center is-clickable">
         <o-icon
           title="Layers"
           class="collapsed-icon"
           pack="far"
-          :icon="collapsed ? 'layer-group' : 'minus-square'"
+          :icon="collapsed ? 'layer-group' : 'fa-stream'"
         />
         <label class="label is-flex-grow-1 mb-0" v-show="!collapsed">Layers</label>
       </div>
     </template>
     <template #collapse-content>
       <ul class="entities-list is-size-7 mt-2">
-        <li v-for="name in store.entityGroupNames" :key="name" :title="name" class="pl-0 is flex">
+        <li v-for="name in store.entityGroupNames" :key="name" :title="name" class="pl-0 is-flex">
           <o-checkbox
             :model-value="store.isGroupVisible(name)"
-            :disable="name === store.entityGroup"
+            :disabled="name === store.entityGroup"
             @update:modelvalue="(v: boolean) => store.setGroupVisible(name, v)"
             size="small"
           >
