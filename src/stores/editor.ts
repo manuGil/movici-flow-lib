@@ -260,6 +260,7 @@ export const useEditorStore = defineStore("editor", () => {
     deletedEntityIds.value = new Map();
     newAttributeTypes.value = new Map();
     newEntityGroups.value = new Set();
+    hiddenGroups.value = new Set();
     historyStore.clear();
     error.value = null;
 
@@ -901,12 +902,25 @@ export const useEditorStore = defineStore("editor", () => {
     newAttributeTypes.value = new Map();
   }
 
+  const hiddenGroups = ref<Set<string>>(new Set());
+
+  function setGroupVisible(name: string, visible: boolean) {
+    if (visible) hiddenGroups.value.delete(name);
+    else hiddenGroups.value.add(name);
+  }
+  function isGroupVisible(name: string) {
+    return hiddenGroups.value.has(name);
+  }
+
   return {
     datasetUUID,
     dataset,
     entityGroup,
     selectedId,
     changes,
+    hiddenGroups,
+    setGroupVisible,
+    isGroupVisible,
     geometryChanges,
     wgs84Features,
     newEntityIds,
