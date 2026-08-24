@@ -6,7 +6,7 @@
           title="Layers"
           class="collapsed-icon"
           pack="far"
-          :icon="collapsed ? 'layer-group' : 'fa-stream'"
+          :icon="collapsed ? 'layer-group' : 'minus-square'"
         />
         <label class="label is-flex-grow-1 mb-0" v-show="!collapsed">Layers</label>
       </div>
