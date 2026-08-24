@@ -146,7 +146,6 @@ const enumNames = computed<Record<string, string>>(() => {
   // We apply a Best-effort convention:
   // an attribute maps to the enum named after its last segment, e.g.
   // "operational.power_source" -> general.enum["power_source"]
-  // TODO: Review if this approach is generic/reliable enough.
   const result: Record<string, string> = {};
   if (!store.entityGroup) return result;
   const groupData = store.dataset?.data?.[store.entityGroup] as
