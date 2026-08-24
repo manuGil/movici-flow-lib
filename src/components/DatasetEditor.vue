@@ -13,6 +13,9 @@
             <MapControlBaseMap :model-value="basemap" @update:model-value="basemap = $event" />
             <EditModeToolbar />
           </template>
+          <template #control-right>
+            <EditorLayerSelector />
+          </template>
           <!-- Hack to leave click registration 'on' because Deck doesn't provide direct event access-->
           <template #control-zero="{ on }">
             <span :data-on="registerOn(on)" style="display: none" />
@@ -37,7 +40,7 @@ import MapControlBaseMap from "../components/mapControls/MapControlBaseMap.vue";
 import EditorToolbar from "./DatasetEditor/EditorToolbar.vue";
 import EditorSidebar from "./DatasetEditor/EditorSidebar.vue";
 import EditModeToolbar from "./DatasetEditor/EditModeToolbar.vue";
-import { useReactiveSummary } from "../composables/useReactiveSummary.ts";
+import EditorLayerSelector from "./DatasetEditor/EditorLayerSelector.vue";
 
 const props = defineProps<{
   modelValue: ShortDataset;
