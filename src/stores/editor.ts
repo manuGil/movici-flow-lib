@@ -446,6 +446,7 @@ export const useEditorStore = defineStore("editor", () => {
   function selectEntityGroup(name: string) {
     entityGroup.value = name;
     selectedId.value = null;
+    setGroupVisible(name, true);
     // Reset draw/delete/select modes when switching groups
     if (
       ["draw-point", "draw-line", "draw-polygon", "delete", "select-rectangle"].includes(
