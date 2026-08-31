@@ -99,7 +99,7 @@ export const useEditorStore = defineStore("editor", () => {
       formatTooltip: (d: string) => parseFloat(d).toFixed(2) + " km",
     },
     "measure-area": {
-      formatTooltip: (a: string) => (parseFloat(a) / 1000).toFixed(2) + " km^2",
+      formatTooltip: (a: string) => (parseFloat(a) / 1000).toFixed(2) + " \u33A2", // Km^2
     },
     "measure-angle": {}, // use library default
   };
