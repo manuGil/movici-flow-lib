@@ -5,10 +5,9 @@
     </span>
     <o-button
       icon-left="plus-square"
-      icon-pack="fas"
+      icon-pack="far"
       size="small"
-      variant="dark"
-      class="mr-1"
+      class="tool-button mr-2"
       @click=""
       title="Add attribute"
     >
@@ -17,9 +16,8 @@
       icon-left="object-group"
       icon-pack="far"
       size="small"
-      variant="dark"
-      class="mr-1"
-      @click=""
+      class="tool-button mr-3"
+      @click="onNewEntityGroup()"
       title="New entity group"
     >
     </o-button>
@@ -64,8 +62,8 @@
 import { useEditorStore } from "@movici-flow-lib/stores/editor";
 import { useEditorHistoryStore } from "@movici-flow-lib/stores/editorHistory";
 import { useDialog } from "@movici-flow-lib/baseComposables/useDialog";
-import { ref, computed } from "vue";
-import type { GeometryType } from "@movici-flow-lib/utils/geoJsonBridge";
+import { useProgrammatic } from "@oruga-ui/oruga-next";
+import NewEntityGroupModal from "./NewEntityGroupModal.vue";
 
 const store = useEditorStore();
 const historyStore = useEditorHistoryStore();
@@ -89,28 +87,15 @@ function onSave() {
   });
 }
 
-function onClose() {
-  return null;
+const { oruga } = useProgrammatic();
+function onNewEntityGroup() {
+  oruga.modal.open({
+    component: NewEntityGroupModal,
+    width: "max-content",
+    trapFocus: true,
+    canCancel: ["scape", "outside"],
+  });
 }
-
-const newGroupName = ref("");
-const newGroupGeometry = ref<GeometryType>("point");
-const addGroupError = ref<string | null>(null);
-
-const canAddGroup = computed(() => !!store.dataset?.data && newGroupName.value.trim().length > 0);
-
-function onAddEntityGroup() {
-  if (!canAddGroup.value) return;
-  const name = newGroupName.value.trim();
-  if (store.addEntityGroup(name, newGroupGeometry.value)) {
-    newGroupName.value = "";
-    addGroupError.value = null;
-  } else {
-    addGroupError.value = `Cannot add entity group '${name}': it already exists`;
-  }
-}
-
-function onNewEntityGroup() {}
 </script>
 
 <style scoped lang="scss">
@@ -125,6 +110,21 @@ function onNewEntityGroup() {}
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 400px;
+  }
+}
+.tool-button {
+  :deep(.button-wrapper) {
+    align-items: center;
+  }
+  :deep(.icon i) {
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+  border-color: $green;
+  background-color: rgba($green, 0.1);
+  color: $green;
+  &:hover {
+    background-color: rgba($green, 0.3);
   }
 }
 </style>
