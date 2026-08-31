@@ -20,12 +20,16 @@ import type { EditModeKey } from "@movici-flow-lib/stores/editor";
 
 const store = useEditorStore();
 
-const baseModes: { key: EditModeKey; label: string; icon: string }[] = [
+const baseModes: { key: EditModeKey; label: string; icon: string; pack?: string }[] = [
   { key: "view", label: "Select", icon: "mouse-pointer" },
   { key: "select-rectangle", label: "Rectangle select", icon: "vector-square" },
   { key: "modify", label: "Edit vertices", icon: "project-diagram" },
   { key: "translate", label: "Move feature", icon: "arrows-alt" },
+  { key: "transform", label: "Transform feature (scale/rotate)", icon: "expand-arrow-alt" }, // not applicable to point features
   { key: "delete", label: "Delete feature", icon: "trash" },
+  { key: "measure-distance", label: "Measure distance", icon: "ruler", pack: "far" },
+  { key: "measure-area", label: "Measure area", icon: "ruler-combined", pack: "far" },
+  { key: "measure-angel", label: "Measure angle", icon: "drafting-compass" },
 ];
 
 const drawModes: { key: EditModeKey; label: string; icon: string; geomType: string }[] = [

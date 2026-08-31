@@ -88,6 +88,10 @@ export function useEditorLayer() {
           "draw-polygon",
           "delete",
           "translate",
+          "transform",
+          "measure-distance",
+          "measure-area",
+          "measure-angle",
         ].includes(store.editModeKey);
         const layerMode =
           isScopeMode && groupName !== store.entityGroup ? VIEW_MODE : store.editMode;
@@ -103,7 +107,7 @@ export function useEditorLayer() {
           visible: store.isGroupVisible(groupName),
           data: featureCollection,
           mode: layerMode,
-          modeConfig: { formatTooltip: () => "" },
+          modeConfig: store.editModeConfig,
           selectedFeatureIndexes: selectedIndexes,
           pickable: true,
           getFillColor: getFillColor as any,
@@ -132,7 +136,7 @@ export function useEditorLayer() {
               store.onGeometryEdit(groupName, updatedData.features, featureIndexes, editType);
             }
           }) as any,
-          updateTriggers: {
+          updatedTriggers: {
             getFillColor: [
               store.selectedId,
               store.multiSelectedIds,
@@ -145,6 +149,7 @@ export function useEditorLayer() {
             ],
             data: [store.wgs84Features[groupName]],
             mode: [store.editMode, store.entityGroup],
+            modeConfig: [store.editModeKey],
           },
         } as any);
       },

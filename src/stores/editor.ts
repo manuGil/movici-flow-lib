@@ -27,6 +27,10 @@ import {
   DrawPointMode,
   DrawLineStringMode,
   DrawPolygonMode,
+  TransformMode,
+  MeasureDistanceMode,
+  MeasureAreaMode,
+  MeasureAngleMode,
 } from "@deck.gl-community/editable-layers";
 import type { Feature } from "geojson";
 import {
@@ -43,11 +47,15 @@ export type EditModeKey =
   | "view"
   | "modify"
   | "translate"
+  | "transform"
   | "draw-point"
   | "draw-line"
   | "draw-polygon"
   | "delete"
-  | "select-rectangle";
+  | "select-rectangle"
+  | "measure-distance"
+  | "measure-area"
+  | "measure-angle";
 
 export const useEditorStore = defineStore("editor", () => {
   const datasetUUID = ref<string | null>(null);
@@ -69,22 +77,35 @@ export const useEditorStore = defineStore("editor", () => {
   const saving = ref(false);
   const error = ref<string | null>(null);
 
-  // Edit mode
   const editModeKey = ref<EditModeKey>("view");
   const modeInstances: Record<EditModeKey, unknown> = {
     view: new ViewMode(),
     modify: new ModifyMode(),
     translate: new TranslateMode(),
+    transform: new TransformMode(),
     "draw-point": new DrawPointMode(),
     "draw-line": new DrawLineStringMode(),
     "draw-polygon": new DrawPolygonMode(),
-    // "delete" reuses ViewMode. Clicking a feature is intercepted by EditorView's click handler
     delete: new ViewMode(),
-    // "select-rect" reuses ViewMode. The SelectionLayer handles the rectangle interaction
-    "select-rectangle": new ViewMode(),
+    "select-rectangle": new MeasureDistanceMode(),
+    "measure-distance": new MeasureDistanceMode(),
+    "measure-area": new MeasureAreaMode(),
+    "measure-angle": new MeasureAngleMode(),
   };
 
   const editMode = computed(() => modeInstances[editModeKey.value]);
+  const modeConfigs: Partial<Record<EditModeKey, Record<string, unknown>>> = {
+    "measure-distance": {
+      formatTooltip: (d: string) => parseFloat(d).toFixed(2) + " km",
+    },
+    "measure-area": {
+      formatTooltip: (a: string) => (parseFloat(a) / 1000).toFixed(2) + " km^2",
+    },
+    "measure-angle": {}, // use library default
+  };
+  const editModeConfig = computed<Record<string, unknown>>(
+    () => modeConfigs[editModeKey.value] ?? { formatTooltip: () => "" },
+  );
   const historyStore = useEditorHistoryStore();
   const flowStore = useFlowStore();
 
@@ -366,9 +387,14 @@ export const useEditorStore = defineStore("editor", () => {
     wgs84Features.value = { ...wgs84Features.value, [groupName]: updatedFeatures };
 
     // Commit to history and geometryChanges only on final editType
-    const isFinal = ["finishMovePosition", "translated", "addPosition", "removePosition"].includes(
-      editType,
-    );
+    const isFinal = [
+      "finishMovePosition",
+      "translated",
+      "addPosition",
+      "removePosition",
+      "scaled",
+      "rotated",
+    ].includes(editType);
     if (!isFinal) return;
 
     const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
@@ -931,6 +957,7 @@ export const useEditorStore = defineStore("editor", () => {
     error,
     editModeKey,
     editMode,
+    editModeConfig,
     entityGroupNames,
     selectedEntity,
     boundingBox,
