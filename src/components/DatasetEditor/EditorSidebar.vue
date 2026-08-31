@@ -1,7 +1,7 @@
 <template>
   <aside class="editor-sidebar">
     <div class="sidebar-header p-3 border-bottom">
-      <o-field :label="'Entity group'" label-class="is-size-7">
+      <o-field :label="'Editable entity group'" label-class="is-size-7">
         <o-select
           v-model="selectedGroup"
           size="small"

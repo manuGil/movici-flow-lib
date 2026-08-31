@@ -8,7 +8,7 @@
           pack="far"
           :icon="collapsed ? 'stream' : 'minus-square'"
         />
-        <label class="label is-flex-grow-1 mb-0" v-show="!collapsed">Layers</label>
+        <label class="label is-flex-grow-1 mb-0" v-show="!collapsed">Entity Groups</label>
       </div>
     </template>
     <template #collapse-content>
