@@ -20,12 +20,23 @@ import type { EditModeKey } from "@movici-flow-lib/stores/editor";
 
 const store = useEditorStore();
 
-const baseModes: { key: EditModeKey; label: string; icon: string; pack?: string }[] = [
+const baseModes: {
+  key: EditModeKey;
+  label: string;
+  icon: string;
+  pack?: string;
+  geomType?: string;
+}[] = [
   { key: "view", label: "Select", icon: "mouse-pointer" },
   { key: "select-rectangle", label: "Rectangle select", icon: "vector-square" },
   { key: "modify", label: "Edit vertices", icon: "project-diagram" },
   { key: "translate", label: "Move feature", icon: "arrows-alt" },
-  { key: "transform", label: "Transform feature (scale/rotate)", icon: "expand-arrow-alt" }, // not applicable to point features
+  {
+    key: "transform",
+    label: "Transform feature (scale/rotate)",
+    icon: "expand-alt",
+    geomType: "point",
+  }, // not applicable to point features
   { key: "delete", label: "Delete feature", icon: "trash" },
   { key: "measure-distance", label: "Measure distance", icon: "ruler", pack: "far" },
   { key: "measure-area", label: "Measure area", icon: "ruler-combined", pack: "far" },
@@ -41,6 +52,7 @@ const drawModes: { key: EditModeKey; label: string; icon: string; geomType: stri
 const visibleModes = computed(() => {
   const geomType = store.currentGroupGeometryType;
   const matchingDrawModes = geomType ? drawModes.filter((m) => m.geomType === geomType) : [];
+  const matchingBaseModes = geomType ? baseModes.filter(() => store.currentGroupGeometryType === "point")
   return [...baseModes, ...matchingDrawModes];
 });
 </script>
