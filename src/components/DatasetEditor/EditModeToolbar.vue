@@ -29,7 +29,7 @@ const baseModes: { key: EditModeKey; label: string; icon: string; pack?: string 
   { key: "delete", label: "Delete feature", icon: "trash" },
   { key: "measure-distance", label: "Measure distance", icon: "ruler", pack: "far" },
   { key: "measure-area", label: "Measure area", icon: "ruler-combined", pack: "far" },
-  { key: "measure-angel", label: "Measure angle", icon: "drafting-compass" },
+  { key: "measure-angle", label: "Measure angle", icon: "drafting-compass" },
 ];
 
 const drawModes: { key: EditModeKey; label: string; icon: string; geomType: string }[] = [
