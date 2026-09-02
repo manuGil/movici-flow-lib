@@ -93,7 +93,7 @@ function onNewEntityGroup() {
     component: NewEntityGroupModal,
     width: "max-content",
     trapFocus: true,
-    canCancel: ["scape", "outside"],
+    canCancel: ["escape", "outside"],
   });
 }
 </script>

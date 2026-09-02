@@ -1,5 +1,5 @@
 <template>
-  <div class="modal-card new-entity-group-model">
+  <div class="modal-card new-entity-group-modal">
     <div class="box has-background-white p-4">
       <p class="title is-6 mb-3">New entity group</p>
       <o-field label="Name" label-class="is-size-7" class="mb-2">
@@ -15,7 +15,7 @@
         </div>
       </o-field>
       <o-field label="Geometry type" label-class="is-size-7" class="mb-2">
-        <o-select placev-model="geometryType" size="small">
+        <o-select v-model="geometryType" size="small">
           <option value="point">point</option>
           <option value="linestring">line</option>
           <option value="polygon">polygon</option>
@@ -56,7 +56,7 @@ function onAdd() {
   }
 }
 </script>
-<style>
+<style scoped lang="scss">
 .new-entity-group-modal {
   width: 320px;
   max-width: 100%;
