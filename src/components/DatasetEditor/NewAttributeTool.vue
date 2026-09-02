@@ -1,7 +1,3 @@
-<script setup lang="ts">
-import EditorFormModal from "./EditorFormModal.vue";
-</script>
-
 <template>
   <EditorFormModal
     title="New attribute"
@@ -23,24 +19,25 @@ import EditorFormModal from "./EditorFormModal.vue";
   </EditorFormModal>
 </template>
 <script setup lang="ts">
-import {computed, onMounted, ref} from "vue";
-import {useEditorStore, type AttributeValueType} from "@movici-flow-lib/stores/editor";
-import EditorFormModal form "./EditorFromModal.vue";
+import { computed, onMounted, ref } from "vue";
+import { useEditorStore, type AttributeValueType } from "@movici-flow-lib/stores/editor";
+import EditorFormModal from "./EditorFormModal.vue";
 
-const emit = defineEmits<{ (e: "close"): void}>();
+const emit = defineEmits<{ (e: "close"): void }>();
 const store = useEditorStore();
 
 const name = ref("");
-const type= ref<AttributeValueType>("number");
-const nameInput = ref<{focus(): void} | null>(null)
+const type = ref<AttributeValueType>("number");
+const nameInput = ref<{ focus(): void } | null>(null);
 
-const canAdd = computed(() =>!!store.entityGroup && name.value.trim().length > 0);
-onMounted(()=>nameInput.value?.focus());
+const canAdd = computed(() => !!store.entityGroup && name.value.trim().length > 0);
+onMounted(() => nameInput.value?.focus());
 
-function  onSubmit(): string | null {
-    if (!store.entityGroup) return "Select an entity group firts";
-    const attr = name.value.trim();
-    return store.addAttribute(store.entityGroup, attr, type.value) ? null: `Cannot add attribute '${attr}': the name is reserved or already exists`;
-
+function onSubmit(): string | null {
+  if (!store.entityGroup) return "Select an entity group firts";
+  const attr = name.value.trim();
+  return store.addAttribute(store.entityGroup, attr, type.value)
+    ? null
+    : `Cannot add attribute '${attr}': the name is reserved or already exists`;
 }
 </script>

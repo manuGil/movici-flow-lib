@@ -92,11 +92,11 @@ function onSave() {
 
 const { oruga } = useProgrammatic();
 
-function openEditorTool (component: Component){
+function openEditorTool(component: Component) {
   oruga.modal.open({
     component,
     width: "max-contnet",
-    trapFocus: true;
+    trapFocus: false,
     canCancel: ["scape", "outside"],
   });
 }
@@ -107,6 +107,7 @@ function onNewEntityGroup() {
 
 function onNewAttribute() {
   openEditorTool(NewAttributeTool);
+}
 </script>
 
 <style scoped lang="scss">
