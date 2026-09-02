@@ -33,7 +33,6 @@ const emit = defineEmits<{ (e: "close"): void }>();
 const store = useEditorStore();
 const name = ref("");
 const geometryType = ref<GeometryType>("point");
-const error = ref<string | null>(null);
 const nameInput = ref<{ focus(): void } | null>(null);
 
 const canAdd = computed(() => !!store.dataset?.data && name.value.trim().length > 0);
@@ -46,12 +45,3 @@ function onSubmit(): string | null {
     : `Cannot add entity group '${groupName}'. It already exists`;
 }
 </script>
-<style scoped lang="scss">
-.new-entity-group-modal {
-  width: 320px;
-  max-width: 100%;
-  .add-row {
-    gap: 0.25rem;
-  }
-}
-</style>

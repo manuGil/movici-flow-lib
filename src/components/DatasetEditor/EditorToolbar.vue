@@ -92,12 +92,13 @@ function onSave() {
 
 const { oruga } = useProgrammatic();
 
-function openEditorTool(component: Component) {
+function openEditorTool(component: Component, props?: Record<string, unknown>) {
   oruga.modal.open({
     component,
-    width: "max-contnet",
+    props,
+    width: "max-content",
     trapFocus: false,
-    canCancel: ["scape", "outside"],
+    canCancel: ["escape", "outside"],
   });
 }
 
@@ -106,7 +107,8 @@ function onNewEntityGroup() {
 }
 
 function onNewAttribute() {
-  openEditorTool(NewAttributeTool);
+  if (!store.entityGroup) return;
+  openEditorTool(NewAttributeTool, { entityGroup: store.entityGroup });
 }
 </script>
 
