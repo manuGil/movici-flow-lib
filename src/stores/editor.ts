@@ -57,6 +57,8 @@ export type EditModeKey =
   | "measure-area"
   | "measure-angle";
 
+export type AttributeValueType = "number" | "string" | "boolean";
+
 export const useEditorStore = defineStore("editor", () => {
   const datasetUUID = ref<string | null>(null);
   const dataset = shallowRef<DatasetWithData | null>(null);

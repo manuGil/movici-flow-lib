@@ -8,7 +8,8 @@
       icon-pack="far"
       size="small"
       class="tool-button mr-2"
-      @click=""
+      :disabled="!store.entityGroup"
+      @click="onNewAttribute()"
       title="Add attribute"
     >
     </o-button>
@@ -59,11 +60,13 @@
 </template>
 
 <script setup lang="ts">
+import type { Component } from "vue";
 import { useEditorStore } from "@movici-flow-lib/stores/editor";
 import { useEditorHistoryStore } from "@movici-flow-lib/stores/editorHistory";
 import { useDialog } from "@movici-flow-lib/baseComposables/useDialog";
 import { useProgrammatic } from "@oruga-ui/oruga-next";
-import NewEntityGroupModal from "./NewEntityGroupModal.vue";
+import NewAttributeTool from "./NewAttributeTool.vue";
+import NewEntityGroupTool from "./NewEntityGroupTool.vue";
 
 const store = useEditorStore();
 const historyStore = useEditorHistoryStore();
@@ -88,14 +91,22 @@ function onSave() {
 }
 
 const { oruga } = useProgrammatic();
-function onNewEntityGroup() {
+
+function openEditorTool (component: Component){
   oruga.modal.open({
-    component: NewEntityGroupModal,
-    width: "max-content",
-    trapFocus: true,
+    component,
+    width: "max-contnet",
+    trapFocus: true;
     canCancel: ["scape", "outside"],
   });
 }
+
+function onNewEntityGroup() {
+  openEditorTool(NewEntityGroupTool);
+}
+
+function onNewAttribute() {
+  openEditorTool(NewAttributeTool);
 </script>
 
 <style scoped lang="scss">
