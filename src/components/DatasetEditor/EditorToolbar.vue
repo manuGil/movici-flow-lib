@@ -95,9 +95,9 @@ const { oruga } = useProgrammatic();
 function openEditorTool(component: Component) {
   oruga.modal.open({
     component,
-    width: "max-contnet",
+    width: "max-content",
     trapFocus: false,
-    canCancel: ["scape", "outside"],
+    canCancel: ["escape", "outside"],
   });
 }
 

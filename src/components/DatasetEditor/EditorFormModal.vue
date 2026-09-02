@@ -3,8 +3,8 @@
     <form class="box has-background-white p-4" @submit.prevent="onConfirm">
       <p class="title is-6 mb-3">{{ title }}</p>
       <slot />
-      <p vi-f="error" class="is-size-7 has-text-danger mt-1">{{ error }}</p>
-      <div class="is-flex is justify-content-flex-end mt-4">
+      <p v-if="error" class="is-size-7 has-text-danger mt-1">{{ error }}</p>
+      <div class="is-flex is-justify-content-flex-end mt-4">
         <o-button size="small" class="mr-2" @click="emit('close')">Cancel</o-button>
         <o-button size="small" variant="primary" native-type="submit" :disabled="!canConfirm">
           {{ confirmLabel }}
@@ -26,7 +26,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{ (e: "close"): void }>();
-const error = ref<string | null>();
+const error = ref<string | null>(null);
 
 function onConfirm() {
   if (!props.canConfirm) return;
