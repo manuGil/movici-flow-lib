@@ -29,8 +29,6 @@ import {
   DrawPolygonMode,
   TransformMode,
   MeasureDistanceMode,
-  MeasureAreaMode,
-  MeasureAngleMode,
 } from "@deck.gl-community/editable-layers";
 import type { Feature } from "geojson";
 import {
@@ -52,10 +50,7 @@ export type EditModeKey =
   | "draw-line"
   | "draw-polygon"
   | "delete"
-  | "select-rectangle"
-  | "measure-distance"
-  | "measure-area"
-  | "measure-angle";
+  | "select-rectangle";
 
 export type AttributeValueType = "integer" | "float" | "string" | "boolean";
 export type AttributeValueKind = "number" | "string" | "boolean";
@@ -95,24 +90,11 @@ export const useEditorStore = defineStore("editor", () => {
     "draw-polygon": new DrawPolygonMode(),
     delete: new ViewMode(),
     "select-rectangle": new MeasureDistanceMode(),
-    "measure-distance": new MeasureDistanceMode(),
-    "measure-area": new MeasureAreaMode(),
-    "measure-angle": new MeasureAngleMode(),
   };
 
   const editMode = computed(() => modeInstances[editModeKey.value]);
-  const modeConfigs: Partial<Record<EditModeKey, Record<string, unknown>>> = {
-    "measure-distance": {
-      formatTooltip: (d: string) => parseFloat(d).toFixed(2) + " km",
-    },
-    "measure-area": {
-      formatTooltip: (a: string) => (parseFloat(a) / 1000).toFixed(2) + " \u33A2", // Km^2
-    },
-    "measure-angle": {}, // use library default
-  };
-  const editModeConfig = computed<Record<string, unknown>>(
-    () => modeConfigs[editModeKey.value] ?? { formatTooltip: () => "" },
-  );
+  // No mode currently needs its own config; suppress the library's tooltips
+  const editModeConfig = computed<Record<string, unknown>>(() => ({ formatTooltip: () => "" }));
   const historyStore = useEditorHistoryStore();
   const flowStore = useFlowStore();
 

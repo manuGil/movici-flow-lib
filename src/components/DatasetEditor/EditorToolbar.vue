@@ -172,20 +172,4 @@ const selectedGroup = computed({
     background-color: rgba($green, 0.3);
   }
 }
-
-// .ml-2 {
-//   :deep(.field) {
-//     align-items: center;
-//     margin-bottom: 0;
-
-//     .field-label {
-//       flex-grow: 0;
-//       white-space: nowrap;
-//     }
-
-//     .field-body {
-//       flex-grow: 0;
-//     }
-//   }
-// }
 </style>

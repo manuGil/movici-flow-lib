@@ -89,9 +89,6 @@ export function useEditorLayer() {
           "delete",
           "translate",
           "transform",
-          "measure-distance",
-          "measure-area",
-          "measure-angle",
         ].includes(store.editModeKey);
         const layerMode =
           isScopeMode && groupName !== store.entityGroup ? VIEW_MODE : store.editMode;
