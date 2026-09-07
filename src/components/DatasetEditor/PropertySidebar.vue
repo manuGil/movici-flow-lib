@@ -1,20 +1,7 @@
 <template>
   <aside class="editor-sidebar">
     <div class="sidebar-header p-3 border-bottom">
-      <o-field :label="'Editable entity group'" label-class="is-size-7">
-        <o-select
-          v-model="selectedGroup"
-          size="small"
-          expanded
-          :disabled="!store.entityGroupNames.length"
-          placeholder="Select entity group"
-        >
-          <option v-for="name in store.entityGroupNames" :key="name" :value="name">
-            {{ name }}
-          </option>
-        </o-select>
-      </o-field>
-
+      <p>Property Editor</p>
       <div class="is-size-7 has-text-grey mt-1">
         {{ entityCount }} entities
         <span v-if="modifiedCount > 0" class="has-text-warning-dark ml-2">
@@ -40,13 +27,6 @@ import { useEditorStore } from "@movici-flow-lib/stores/editor";
 import PropertyEditor from "./PropertyEditor.vue";
 
 const store = useEditorStore();
-
-const selectedGroup = computed({
-  get: () => store.entityGroup,
-  set: (val: string | null) => {
-    if (val) store.selectEntityGroup(val);
-  },
-});
 
 const entityCount = computed(() => {
   if (!store.dataset?.data || !store.entityGroup) return 0;
