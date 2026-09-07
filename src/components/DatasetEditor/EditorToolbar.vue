@@ -1,70 +1,73 @@
 <template>
   <nav class="editor-toolbar is-flex is-align-items-center px-4 py-2">
-    <span v-if="store.dirtyCount > 0" class="is-size-7 has-text-warning-dark mr-3">
+    <span v-if="store.dirtyCount > 0" class="dirty-count is-size-7 has-text-warning mr-3">
       {{ store.dirtyCount }} unsaved change{{ store.dirtyCount !== 1 ? "s" : "" }}
     </span>
-    <o-button
-      icon-left="plus-square"
-      icon-pack="far"
-      size="small"
-      class="tool-button mr-2"
-      :disabled="!store.entityGroup"
-      @click="onNewAttribute()"
-      title="Add attribute"
-    >
-    </o-button>
-    <o-button
-      icon-left="object-group"
-      icon-pack="far"
-      size="small"
-      class="tool-button mr-3"
-      @click="onNewEntityGroup()"
-      title="New entity group"
-    >
-    </o-button>
-    <o-button
-      icon-left="undo"
-      icon-pack="fas"
-      size="small"
-      variant="dark"
-      class="mr-1"
-      :disabled="historyStore.undoStack.length === 0"
-      @click="store.undo()"
-      title="Undo"
-    >
-    </o-button>
+    <div>
+      <o-button
+        icon-left="plus-square"
+        icon-pack="far"
+        size="small"
+        class="tool-button mr-2"
+        :disabled="!store.entityGroup"
+        @click="onNewAttribute()"
+        title="Add attribute"
+      >
+      </o-button>
+      <o-button
+        icon-left="object-group"
+        icon-pack="far"
+        size="small"
+        class="tool-button mr-3"
+        @click="onNewEntityGroup()"
+        title="New entity group"
+      >
+      </o-button>
+      <o-button
+        icon-left="undo"
+        icon-pack="fas"
+        size="small"
+        variant="dark"
+        class="mr-1"
+        :disabled="historyStore.undoStack.length === 0"
+        @click="store.undo()"
+        title="Undo"
+      >
+      </o-button>
 
-    <o-button
-      icon-left="redo"
-      icon-pack="fas"
-      size="small"
-      variant="dark"
-      class="mr-3"
-      :disabled="historyStore.redoStack.length === 0"
-      @click="store.redo()"
-      title="Redo"
-    >
-    </o-button>
+      <o-button
+        icon-left="redo"
+        icon-pack="fas"
+        size="small"
+        variant="dark"
+        class="mr-3"
+        :disabled="historyStore.redoStack.length === 0"
+        @click="store.redo()"
+        title="Redo"
+      >
+      </o-button>
 
-    <o-button
-      icon-left="save"
-      icon-pack="fas"
-      size="small"
-      variant="primary"
-      :disabled="!store.isDirty || store.saving"
-      @click="onSave"
-      title="Save"
-    >
-    </o-button>
-    <o-field :label="'Editable entity group'" label-class="is-size-7">
+      <o-button
+        icon-left="save"
+        icon-pack="fas"
+        size="small"
+        class="mr-3"
+        variant="primary"
+        :disabled="!store.isDirty || store.saving"
+        @click="onSave"
+        title="Save"
+      >
+      </o-button>
+    </div>
+    <o-field horizontal nowrap size="small" :label="'Entity group:'" label-class="is-size-7">
       <o-select
         v-model="selectedGroup"
         size="small"
-        expanded
+        rounded
         :disabled="!store.entityGroupNames.length"
-        placeholder="Select entity group"
+        placeholder="Select a group to edit"
       >
-        <option v-if="name in store.entityGroupNames" :key="name" :value="name">
+        <option v-for="name in store.entityGroupNames" :key="name" :value="name">
           {{ name }}
         </option>
       </o-select>
@@ -85,6 +88,8 @@ import NewEntityGroupTool from "./NewEntityGroupTool.vue";
 const store = useEditorStore();
 const historyStore = useEditorHistoryStore();
 const { openDialog } = useDialog();
+
+store.entityGroupNames;
 
 function onSave() {
   const emptied = store.groupsToBeEmptied;
@@ -128,7 +133,7 @@ function onNewAttribute() {
 const selectedGroup = computed({
   get: () => store.entityGroup,
   set: (val: string | null) => {
-    if (val) store.selectedEntityGroup(val);
+    if (val) store.selectEntityGroup(val);
   },
 });
 </script>
@@ -146,6 +151,11 @@ const selectedGroup = computed({
     text-overflow: ellipsis;
     max-width: 400px;
   }
+
+  .dirty-count {
+    order: 1;
+    margin-left: auto;
+  }
 }
 .tool-button {
   :deep(.button-wrapper) {
@@ -162,4 +172,20 @@ const selectedGroup = computed({
     background-color: rgba($green, 0.3);
   }
 }
+
+// .ml-2 {
+//   :deep(.field) {
+//     align-items: center;
+//     margin-bottom: 0;
+
+//     .field-label {
+//       flex-grow: 0;
+//       white-space: nowrap;
+//     }
+
+//     .field-body {
+//       flex-grow: 0;
+//     }
+//   }
+// }
 </style>

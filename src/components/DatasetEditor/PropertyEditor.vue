@@ -39,6 +39,7 @@
           <o-input
             v-else-if="inputKind(String(key)) === 'number'"
             type="number"
+            :step="isIntegerColumn(String(key)) ? '1' : 'any'"
             :model-value="displayValue(String(key))"
             @change="(e: Event) => onNumberChange(String(key), e)"
             size="small"
@@ -69,7 +70,12 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useEditorStore } from "@movici-flow-lib/stores/editor";
+import {
+  attributeValueKind,
+  useEditorStore,
+  type AttributeValueKind,
+  type AttributeValueType,
+} from "@movici-flow-lib/stores/editor";
 
 const props = defineProps<{
   entity: Record<string, unknown> | null;
@@ -91,11 +97,20 @@ function isGeometry(key: string): boolean {
   return key.startsWith("geometry.");
 }
 
+function declaredType(key: string): AttributeValueType | null {
+  if (!props.entityGroup) return null;
+  return store.newAttributeTypes.get(props.entityGroup)?.get(key) ?? null;
+}
+
+function isIntegerColumn(key: string): boolean {
+  return declaredType(key) === "integer";
+}
+
 /** Data type of a column, derived from the COLUMN data
  * new entities are null-padded (`addEntity`), so dispatching on the row's
  * cell value would send every attribute of a drawn entity through the text
  * fallback and store strings into numeric columns. */
-function columnType(key: string): "number" | "boolean" | "string" | null {
+function columnType(key: string): AttributeValueKind | null {
   if (!props.entityGroup) return null;
   const groupData = store.dataset?.data?.[props.entityGroup] as
     | Record<string, unknown[]>
@@ -107,7 +122,8 @@ function columnType(key: string): "number" | "boolean" | "string" | null {
     const t = typeof v;
     return t === "number" || t === "boolean" || t === "string" ? t : null;
   }
-  return store.newAttributeTypes.get(props.entityGroup)?.get(key) ?? null;
+  const declared = declaredType(key);
+  return declared ? attributeValueKind(declared) : null;
 }
 
 function inputKind(key: string): "enum" | "boolean" | "number" | "readonly" | "text" {
@@ -147,9 +163,19 @@ function geometryDisplay(key: string): string {
 }
 
 function onNumberChange(key: string, e: Event) {
-  const raw = (e.target as HTMLInputElement).value;
+  const input = e.target as HTMLInputElement;
+  const raw = input.value;
   // Empty input clears the value (null); otherwise preserve the numeric type
-  emit("change", key, raw === "" ? null : Number(raw));
+  if (raw === "") {
+    emit("change", key, null);
+    return;
+  }
+  let value = Number(raw);
+  if (isIntegerColumn(key)) {
+    value = Math.round(value);
+    input.value = String(value);
+  }
+  emit("change", key, value);
 }
 
 function isModified(key: string): boolean {
