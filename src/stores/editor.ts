@@ -57,7 +57,12 @@ export type EditModeKey =
   | "measure-area"
   | "measure-angle";
 
-export type AttributeValueType = "number" | "string" | "boolean";
+export type AttributeValueType = "integer" | "float" | "string" | "boolean";
+export type AttributeValueKind = "number" | "string" | "boolean";
+
+export function attributeValueKind(type: AttributeValueType): AttributeValueKind {
+  return type === "integer" || type === "float" ? "number" : type;
+}
 
 export const useEditorStore = defineStore("editor", () => {
   const datasetUUID = ref<string | null>(null);
@@ -782,15 +787,9 @@ export const useEditorStore = defineStore("editor", () => {
     editModeKey.value = "view";
   }
 
-  const newAttributeTypes = ref<Map<string, Map<string, "number" | "boolean" | "string">>>(
-    new Map(),
-  );
+  const newAttributeTypes = ref<Map<string, Map<string, AttributeValueType>>>(new Map());
 
-  function addAttribute(
-    groupName: string,
-    name: string,
-    type: "number" | "boolean" | "string",
-  ): boolean {
+  function addAttribute(groupName: string, name: string, type: AttributeValueType): boolean {
     const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
     const attr = name.trim();
     if (!groupData || !attr || attr === "id" || attr === "deleted" || attr.startsWith("geometry."))

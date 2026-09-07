@@ -11,7 +11,8 @@
     </o-field>
     <o-field label="Type" label-class="is-size-7" class="mb-2">
       <o-select v-model="type" size="small">
-        <option value="number">number</option>
+        <option value="integer">integer</option>
+        <option value="float">float</option>
         <option value="string">string</option>
         <option value="boolean">boolean</option>
       </o-select>
@@ -28,7 +29,7 @@ const props = defineProps<{ entityGroup: string }>();
 const store = useEditorStore();
 
 const name = ref("");
-const type = ref<AttributeValueType>("number");
+const type = ref<AttributeValueType>("integer");
 const nameInput = ref<{ focus(): void } | null>(null);
 
 const canAdd = computed(() => !!store.entityGroup && name.value.trim().length > 0);
