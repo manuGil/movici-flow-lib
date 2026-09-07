@@ -56,11 +56,25 @@
       title="Save"
     >
     </o-button>
+    <o-field :label="'Editable entity group'" label-class="is-size-7">
+      <o-select
+        v-model="selectedGroup"
+        size="small"
+        expanded
+        :disabled="!store.entityGroupNames.length"
+        placeholder="Select entity group"
+      >
+        <option v-if="name in store.entityGroupNames" :key="name" :value="name">
+          {{ name }}
+        </option>
+      </o-select>
+    </o-field>
   </nav>
 </template>
 
 <script setup lang="ts">
 import type { Component } from "vue";
+import { computed } from "vue";
 import { useEditorStore } from "@movici-flow-lib/stores/editor";
 import { useEditorHistoryStore } from "@movici-flow-lib/stores/editorHistory";
 import { useDialog } from "@movici-flow-lib/baseComposables/useDialog";
@@ -110,6 +124,13 @@ function onNewAttribute() {
   if (!store.entityGroup) return;
   openEditorTool(NewAttributeTool, { entityGroup: store.entityGroup });
 }
+
+const selectedGroup = computed({
+  get: () => store.entityGroup,
+  set: (val: string | null) => {
+    if (val) store.selectedEntityGroup(val);
+  },
+});
 </script>
 
 <style scoped lang="scss">
