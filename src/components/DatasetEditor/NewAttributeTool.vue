@@ -24,7 +24,7 @@ import { useEditorStore, type AttributeValueType } from "@movici-flow-lib/stores
 import EditorFormModal from "./EditorFormModal.vue";
 
 const emit = defineEmits<{ (e: "close"): void }>();
-const props = defineProps<{ entityGroup: string }>;
+const props = defineProps<{ entityGroup: string }>();
 const store = useEditorStore();
 
 const name = ref("");
