@@ -38,7 +38,7 @@ import Deck from "../components/Deck.vue";
 import MapControlNavigation from "../components/mapControls/MapControlNavigation.vue";
 import MapControlBaseMap from "../components/mapControls/MapControlBaseMap.vue";
 import EditorToolbar from "./DatasetEditor/EditorToolbar.vue";
-import EditorSidebar from "./DatasetEditor/EditorSidebar.vue";
+import EditorSidebar from "./DatasetEditor/PropertySidebar.vue";
 import EditModeToolbar from "./DatasetEditor/EditModeToolbar.vue";
 import EditorLayerSelector from "./DatasetEditor/EditorLayerSelector.vue";
 
