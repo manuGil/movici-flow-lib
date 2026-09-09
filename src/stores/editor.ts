@@ -693,6 +693,16 @@ export const useEditorStore = defineStore("editor", () => {
     }
   }
 
+  async function discardChanges() {
+    if (!datasetUUID.value) return;
+    const savedGroup = entityGroup.value;
+    await loadDataset(datasetUUID.value);
+    if (savedGroup && dataset.value?.data && savedGroup in dataset.value.data) {
+      entityGroup.value = savedGroup;
+    }
+    editModeKey.value = "view";
+  }
+
   function addEntity(groupName: string, newFeature: Feature): void {
     const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
     if (!groupData) return;
@@ -884,34 +894,6 @@ export const useEditorStore = defineStore("editor", () => {
     editModeKey.value = "view";
   }
 
-  function clearChanges() {
-    changes.value = new Map();
-    geometryChanges.value = new Map();
-    newEntityIds.value = new Map();
-    deletedEntityIds.value = new Map();
-    historyStore.clear();
-
-    // Drop entity groups created in a session before rebuilding state
-    const data = dataset.value?.data;
-    if (data) {
-      for (const groupName of newEntityGroups.value) {
-        delete data[groupName];
-        if (entityGroup.value === groupName) entityGroup.value = null;
-      }
-      triggerRef(dataset);
-    }
-    newEntityGroups.value = new Set();
-
-    // Reset wgs84Features from original dataset
-    initWgs84Features();
-    // Delete new attributes from groupData
-    for (const [groupName, attrs] of newAttributeTypes.value) {
-      const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
-      if (groupData) for (const attr of attrs.keys()) delete groupData[attr];
-    }
-    newAttributeTypes.value = new Map();
-  }
-
   const hiddenGroups = ref<Set<string>>(new Set());
 
   function setGroupVisible(name: string, visible: boolean) {
@@ -965,5 +947,6 @@ export const useEditorStore = defineStore("editor", () => {
     undo,
     redo,
     save,
+    discardChanges,
   };
 });
