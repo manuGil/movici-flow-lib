@@ -133,7 +133,7 @@ export function useEditorLayer() {
               store.onGeometryEdit(groupName, updatedData.features, featureIndexes, editType);
             }
           }) as any,
-          updatedTriggers: {
+          updateTriggers: {
             getFillColor: [
               store.selectedId,
               store.multiSelectedIds,
