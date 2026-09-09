@@ -40,10 +40,22 @@
         icon-pack="fas"
         size="small"
         variant="dark"
-        class="mr-3"
+        class="mr-1"
         :disabled="historyStore.redoStack.length === 0"
         @click="store.redo()"
         title="Redo"
+      >
+      </o-button>
+
+      <o-button
+        icon-left="eraser"
+        icon-pack="fas"
+        size="small"
+        variant="danger"
+        class="mr-3"
+        :disabled="!store.isDirty || store.saving"
+        @click="onDiscard"
+        title="Discard changes"
       >
       </o-button>
 
@@ -90,6 +102,21 @@ const historyStore = useEditorHistoryStore();
 const { openDialog } = useDialog();
 
 store.entityGroupNames;
+
+function onDiscard() {
+  openDialog({
+    title: "Discard all changes?",
+    message:
+      `This will discard all ${store.dirtyCount} unsaved change` +
+      `${store.dirtyCount !== 1 ? "s" : ""}, including new entity groups and attributes. ` +
+      `This cannot be undone.`,
+    variant: "danger",
+    hasIcon: true,
+    cancelText: "Cancel",
+    confirmButtonText: "Yes. Discard",
+    onConfirm: () => store.discardChanges(),
+  });
+}
 
 function onSave() {
   const emptied = store.groupsToBeEmptied;
