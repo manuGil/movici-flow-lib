@@ -497,7 +497,7 @@ export const useEditorStore = defineStore("editor", () => {
     const features = wgs84Features.value[entityGroup.value] ?? [];
     const ids = featuresInPolygon(features, ring)
       .map((f) => (f.properties as Record<string, unknown> | null)?.__id as number | undefined)
-      .fileter((id): id is number => id !== undefined);
+      .filter((id): id is number => id !== undefined);
     setMultiSelection(ids);
   }
 
