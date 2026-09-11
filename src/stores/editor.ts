@@ -28,7 +28,8 @@ import {
   DrawLineStringMode,
   DrawPolygonMode,
 } from "@deck.gl-community/editable-layers";
-import type { Feature } from "geojson";
+import type { Feature, Position } from "geojson";
+import { featuresInPolygon } from "@movici-flow-lib/utils/spatialSelection";
 import {
   useEditorHistoryStore,
   type Command,
@@ -47,8 +48,11 @@ export type EditModeKey =
   | "draw-line"
   | "draw-polygon"
   | "delete"
-  | "select-rectangle";
+  | "select-rectangle"
+  | "select-polygon";
 
+// selection modes that survive setEditMode
+export const MULTI_SELECT_MODES: EditModeKey[] = ["select-rectangle", "select-polygon"];
 export type AttributeValueType = "integer" | "float" | "string" | "boolean";
 export type AttributeValueKind = "number" | "string" | "boolean";
 
@@ -71,7 +75,7 @@ export const useEditorStore = defineStore("editor", () => {
   const newEntityIds = ref<Map<string, Set<number>>>(new Map());
   // Ids of existing entities deleted in an editing session
   const deletedEntityIds = ref<Map<string, Set<number>>>(new Map());
-  // Ids of entities selected via rectangle selection (only for current entity group)
+  // Ids of entities selected via rectangle/polygon selection (only for current entity group)
   const multiSelectedIds = ref<number[]>([]);
   const saving = ref(false);
   const error = ref<string | null>(null);
@@ -86,6 +90,7 @@ export const useEditorStore = defineStore("editor", () => {
     "draw-polygon": new DrawPolygonMode(),
     delete: new ViewMode(),
     "select-rectangle": new ViewMode(),
+    "select-polygon": new ViewMode(),
   };
 
   const editMode = computed(() => modeInstances[editModeKey.value]);
@@ -455,7 +460,7 @@ export const useEditorStore = defineStore("editor", () => {
     setGroupVisible(name, true);
     // Reset draw/delete/select modes when switching groups
     if (
-      ["draw-point", "draw-line", "draw-polygon", "delete", "select-rectangle"].includes(
+      ["draw-point", "draw-line", "draw-polygon", "delete", ...MULTI_SELECT_MODES].includes(
         editModeKey.value,
       )
     ) {
@@ -476,7 +481,7 @@ export const useEditorStore = defineStore("editor", () => {
   function setEditMode(mode: EditModeKey): void {
     editModeKey.value = mode;
     selectedId.value = null;
-    if (mode !== "select-rectangle") {
+    if (!MULTI_SELECT_MODES.includes(mode)) {
       multiSelectedIds.value = [];
     }
   }
@@ -485,6 +490,15 @@ export const useEditorStore = defineStore("editor", () => {
     multiSelectedIds.value = ids;
     // if exactly one entity selected, mirror into selectedId for the properties panel
     selectedId.value = ids.length === 1 ? ids[0]! : null;
+  }
+
+  function selectInPolygon(ring: Position[]): void {
+    if (!entityGroup.value) return;
+    const features = wgs84Features.value[entityGroup.value] ?? [];
+    const ids = featuresInPolygon(features, ring)
+      .map((f) => (f.properties as Record<string, unknown> | null)?.__id as number | undefined)
+      .fileter((id): id is number => id !== undefined);
+    setMultiSelection(ids);
   }
 
   function updateProperty(
@@ -930,6 +944,7 @@ export const useEditorStore = defineStore("editor", () => {
     deleteEntity,
     setEditMode,
     setMultiSelection,
+    selectInPolygon,
     selectEntityGroup,
     selectedIsNew,
     selectEntity,

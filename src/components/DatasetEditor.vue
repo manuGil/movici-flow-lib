@@ -41,6 +41,7 @@ import EditorToolbar from "./DatasetEditor/EditorToolbar.vue";
 import EditorSidebar from "./DatasetEditor/PropertySidebar.vue";
 import EditModeToolbar from "./DatasetEditor/EditModeToolbar.vue";
 import EditorLayerSelector from "./DatasetEditor/EditorLayerSelector.vue";
+import { MULTIPLE_SELECT_MODES } from "../stores/editor";
 
 const props = defineProps<{
   modelValue: ShortDataset;
@@ -62,6 +63,9 @@ function registerOn(on: (event: "click", callback: Record<string, DeckEventCallb
   _on = on;
   on("click", {
     editorClick: (payload) => {
+      // Selection modes own map clicks
+      if (MULTIPLE_SELECT_MODES.includes(store.idModeKey)) return;
+
       const info = payload.pickInfo; //info.object is a GeoJSON feature with properties.__id
       const obj = info?.object as any;
       const entityId = obj?.properties?.__id;
