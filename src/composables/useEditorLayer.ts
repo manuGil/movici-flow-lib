@@ -40,7 +40,8 @@ export function useEditorLayer() {
 
   watch(
     // Enables abandon selection polygons to survive edit-tool changes.
-    () => {
+    () => store.editModeKey,
+    (mode) => {
       if (mode !== "select-polygon") selectPolygonMode.resetClickSequence();
     },
   );
