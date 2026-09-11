@@ -1,5 +1,10 @@
-import { computed } from "vue";
-import { EditableGeoJsonLayer, ViewMode, SelectionLayer } from "@deck.gl-community/editable-layers";
+import { computed, watch } from "vue";
+import {
+  EditableGeoJsonLayer,
+  ViewMode,
+  SelectionLayer,
+  DrawPolygonMode,
+} from "@deck.gl-community/editable-layers";
 import type { Layer } from "@deck.gl/core";
 import { useEditorStore } from "../stores/editor";
 import { MoviciColors, hexToColorTriple } from "@movici-flow-lib/visualizers/maps/colorMaps";
@@ -9,6 +14,9 @@ const VIEW_MODE = new ViewMode();
 const HIGHLIGHT_COLOR: [number, number, number, number] = [255, 140, 0, 220];
 const EDIT_HANDLE_COLOR: [number, number, number, number] = [255, 255, 255, 255];
 const EDIT_HANDLE_OUTLINE_COLOR: [number, number, number, number] = [255, 140, 0, 255];
+const SELECTION_FILL_COLOR: [number, number, number, number] = [100, 160, 220, 40];
+const SELECTION_LINE_COLOR: [number, number, number, number] = [100, 160, 220, 200];
+const EMPTY_FEATURE_COLLECTION = { type: "FeatureCollection" as const, features: [] };
 
 const ENTITY_GROUP_PALETTE = [
   MoviciColors.GREEN,
@@ -28,6 +36,14 @@ export function useEditorLayer() {
 
   const accessorCache = new Map<string, { getFillColor: unknown; getLineColor: unknown }>();
   const collectionCache = new Map<string, { features: Feature[]; collection: FeatureCollection }>();
+  const selectPolygonMode = new DrawPolygonMode();
+
+  watch(
+    // Enables abandon selection polygons to survive edit-tool changes.
+    () => {
+      if (mode !== "select-polygon") selectPolygonMode.resetClickSequence();
+    },
+  );
 
   function accessorFor(groupName: string, fill: RGBA, line: RGBA) {
     let cached = accessorCache.get(groupName);
@@ -172,7 +188,32 @@ export function useEditorLayer() {
         } as any),
       );
     }
-
+    // User draws a polygon in and around multiple features.
+    if (store.editModeKey === "select-polygon" && store.entityGroup) {
+      editableLayers.push(
+        new EditableGeoJsonLayer({
+          id: "editor-selection-polygon",
+          data: EMPTY_FEATURE_COLLECTION,
+          mode: selectPolygonMode,
+          modeConfig: { preventOverlappingLines: true },
+          selectedFeatureIndexes: [],
+          pickable: true,
+          getTentativeFillColor: () => SELECTION_FILL_COLOR,
+          getTentativeLineColor: () => SELECTION_LINE_COLOR,
+          getTentativeWidth: () => 2,
+          lineWidthMinPixels: 1,
+          getEditHandlePointColor: EDIT_HANDLE_COLOR,
+          getEditHandlePointOutlineColor: SELECTION_LINE_COLOR,
+          editHandlePointOutline: true,
+          editHandlePointStrokeWidth: 2,
+          onEdit: ((editAction: any) => {
+            if (editAction.editType !== "addFeatures") return;
+            const ring = editAction.updateData.features.at(-1)?.geometry?.coordinates?.[0];
+            if (ring) store.selectInPolygon(ring);
+          }) as any,
+        } as any),
+      );
+    }
     return editableLayers;
   });
 
