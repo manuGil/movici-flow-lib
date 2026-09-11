@@ -8,7 +8,7 @@ function pointInRing(x: number, y: number, ring: Position[]): boolean {
     const xj = ring[j]![0]!;
     const yj = ring[j]![1]!;
     if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) {
-      inside = true;
+      inside = !inside;
     }
   }
   return inside;

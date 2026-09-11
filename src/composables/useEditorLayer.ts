@@ -201,15 +201,15 @@ export function useEditorLayer() {
           pickable: true,
           getTentativeFillColor: () => SELECTION_FILL_COLOR,
           getTentativeLineColor: () => SELECTION_LINE_COLOR,
-          getTentativeWidth: () => 2,
+          getTentativeLineWidth: () => 2,
           lineWidthMinPixels: 1,
           getEditHandlePointColor: EDIT_HANDLE_COLOR,
           getEditHandlePointOutlineColor: SELECTION_LINE_COLOR,
           editHandlePointOutline: true,
           editHandlePointStrokeWidth: 2,
           onEdit: ((editAction: any) => {
-            if (editAction.editType !== "addFeatures") return;
-            const ring = editAction.updateData.features.at(-1)?.geometry?.coordinates?.[0];
+            if (editAction.editType !== "addFeature") return;
+            const ring = editAction.updatedData.features.at(-1)?.geometry?.coordinates?.[0];
             if (ring) store.selectInPolygon(ring);
           }) as any,
         } as any),
