@@ -26,8 +26,8 @@ const baseModes: {
   icon: string;
 }[] = [
   { key: "view", label: "Select", icon: "mouse-pointer" },
-  { key: "select-rectangle", label: "Rectangle select", icon: "vector-square" },
-  { key: "select-rectangle", label: "Polygon select", icon: "bezier-curve" },
+  { key: "select-rectangle", label: "Select by rectangle", icon: "vector-square" },
+  { key: "select-polygon", label: "Select by area", icon: "bezier-curve" },
   { key: "modify", label: "Edit vertices", icon: "project-diagram" },
   { key: "translate", label: "Move feature", icon: "arrows-alt" },
   { key: "delete", label: "Delete feature", icon: "trash" },
