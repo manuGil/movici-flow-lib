@@ -88,7 +88,6 @@ export function useEditorLayer() {
           "draw-polygon",
           "delete",
           "translate",
-          "transform",
         ].includes(store.editModeKey);
         const layerMode =
           isScopeMode && groupName !== store.entityGroup ? VIEW_MODE : store.editMode;
