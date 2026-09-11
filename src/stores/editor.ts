@@ -81,7 +81,6 @@ export const useEditorStore = defineStore("editor", () => {
     view: new ViewMode(),
     modify: new ModifyMode(),
     translate: new TranslateMode(),
-    transform: new TransformMode(),
     "draw-point": new DrawPointMode(),
     "draw-line": new DrawLineStringMode(),
     "draw-polygon": new DrawPolygonMode(),
