@@ -27,8 +27,6 @@ import {
   DrawPointMode,
   DrawLineStringMode,
   DrawPolygonMode,
-  TransformMode,
-  MeasureDistanceMode,
 } from "@deck.gl-community/editable-layers";
 import type { Feature } from "geojson";
 import {
@@ -45,7 +43,6 @@ export type EditModeKey =
   | "view"
   | "modify"
   | "translate"
-  | "transform"
   | "draw-point"
   | "draw-line"
   | "draw-polygon"
@@ -89,7 +86,7 @@ export const useEditorStore = defineStore("editor", () => {
     "draw-line": new DrawLineStringMode(),
     "draw-polygon": new DrawPolygonMode(),
     delete: new ViewMode(),
-    "select-rectangle": new MeasureDistanceMode(),
+    "select-rectangle": new ViewMode(),
   };
 
   const editMode = computed(() => modeInstances[editModeKey.value]);
@@ -376,14 +373,9 @@ export const useEditorStore = defineStore("editor", () => {
     wgs84Features.value = { ...wgs84Features.value, [groupName]: updatedFeatures };
 
     // Commit to history and geometryChanges only on final editType
-    const isFinal = [
-      "finishMovePosition",
-      "translated",
-      "addPosition",
-      "removePosition",
-      "scaled",
-      "rotated",
-    ].includes(editType);
+    const isFinal = ["finishMovePosition", "translated", "addPosition", "removePosition"].includes(
+      editType,
+    );
     if (!isFinal) return;
 
     const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
