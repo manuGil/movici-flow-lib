@@ -39,7 +39,7 @@ export function useEditorLayer() {
   const selectPolygonMode = new DrawPolygonMode();
 
   watch(
-    // Enables abandon selection polygons to survive edit-tool changes.
+    // Discards an abandoned unfinished selection polygon when changing tool
     () => store.editModeKey,
     (mode) => {
       if (mode !== "select-polygon") selectPolygonMode.resetClickSequence();
