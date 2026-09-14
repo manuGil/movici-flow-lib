@@ -51,7 +51,7 @@ export interface BatchUpdatePropertyCommand {
   kind: "batch-property";
   entityGroup: string;
   property: string;
-  oldValues: [number, unknown[]];
+  oldValues: [number, unknown][];
   newValue: unknown;
 }
 
@@ -62,7 +62,7 @@ export interface DeleteAttributeCommand {
   wasNew: boolean; // tracks if the attribute is new in the session
   declaredType: AttributeValueType | null;
   columnSnapshot: unknown[] | null;
-  removedChanges: [number, unknown[]]; // pending changes that a deletion dropped
+  removedChanges: [number, unknown][]; // pending changes that a deletion dropped
 }
 
 export type Command =
