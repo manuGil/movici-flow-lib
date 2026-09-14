@@ -43,8 +43,11 @@ import {
   type AttributeValueType,
   type AttributeValueKind,
 } from "@movici-flow-lib/utils/editorAttributes";
+import { useMoviciSettings } from "@movici-flow-lib/baseComposables/useMoviciSettings";
 
 type Changes = Map<string, Map<number, Record<string, unknown>>>;
+
+const { settings } = useMoviciSettings();
 
 export { attributeValueKind };
 export type { AttributeValueType, AttributeValueKind };
@@ -789,6 +792,10 @@ export const useEditorStore = defineStore("editor", () => {
 
   const newAttributeTypes = ref<Map<string, Map<string, AttributeValueType>>>(new Map());
 
+  function isRestricted(name: string): boolean {
+    return isRestrictedAttribute(name, settings.restrictedAttributes);
+  }
+
   function addAttribute(groupName: string, name: string, type: AttributeValueType): boolean {
     const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
     const attr = name.trim();
@@ -936,6 +943,7 @@ export const useEditorStore = defineStore("editor", () => {
     boundingBox,
     currentGroupGeometryType,
     isDirty,
+    isRestricted,
     dirtyCount,
     groupsToBeEmptied,
     generatePatch,
