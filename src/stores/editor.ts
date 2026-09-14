@@ -36,9 +36,23 @@ import {
   type UpdatePropertyCommand,
   type GeometryCommand,
   type CreateCommand,
+  type BatchUpdatePropertyCommand,
+  type DeleteAttributeCommand,
 } from "@movici-flow-lib/stores/editorHistory";
+import {
+  attributeValueKind,
+  isRestrictedAttribute,
+  type AttributeValueType,
+  type AttributeValueKind,
+} from "@movici-flow-lib/utils/editorAttributes";
+import { useMoviciSettings } from "@movici-flow-lib/baseComposables/useMoviciSettings";
 
 type Changes = Map<string, Map<number, Record<string, unknown>>>;
+
+const { settings } = useMoviciSettings();
+
+export { attributeValueKind };
+export type { AttributeValueType, AttributeValueKind };
 
 export type EditModeKey =
   | "view"
@@ -53,12 +67,6 @@ export type EditModeKey =
 
 // selection modes that survive setEditMode
 export const MULTI_SELECT_MODES: EditModeKey[] = ["select-rectangle", "select-polygon"];
-export type AttributeValueType = "integer" | "float" | "string" | "boolean";
-export type AttributeValueKind = "number" | "string" | "boolean";
-
-export function attributeValueKind(type: AttributeValueType): AttributeValueKind {
-  return type === "integer" || type === "float" ? "number" : type;
-}
 
 export const useEditorStore = defineStore("editor", () => {
   const datasetUUID = ref<string | null>(null);
@@ -129,6 +137,11 @@ export const useEditorStore = defineStore("editor", () => {
     return newEntityIds.value.get(entityGroup.value)?.has(selectedId.value) ?? false;
   });
 
+  const selectedIds = computed<number[]>(() => {
+    if (multiSelectedIds.value.length) return multiSelectedIds.value;
+    return selectedId.value !== null ? [selectedId.value] : [];
+  });
+
   // Bounding box [minX, minY, maxX, maxY] in the dataset CRS from geometry columns.
   // It handles point (geometry.x/y), line (geometry.linestring_2d/3d) and polygon.
   const boundingBox = computed<[number, number, number, number] | null>(() => {
@@ -165,6 +178,9 @@ export const useEditorStore = defineStore("editor", () => {
     for (const id of deletedEntityIds.value.values()) {
       if (id.size > 0) return true;
     }
+    for (const attributes of deletedAttributes.value.values()) {
+      if (attributes.size > 0) return true;
+    }
     // A new entity group is deliberately NOT dirty on its own: the backend rejects
     // groups with zero entities. It becomes dirty via geometryChanges as soon as
     // addEntity puts the first entity in it, and generatePatch skips empty groups.
@@ -181,6 +197,9 @@ export const useEditorStore = defineStore("editor", () => {
     }
     for (const ids of deletedEntityIds.value.values()) {
       count += ids.size;
+    }
+    for (const attributes of deletedAttributes.value.values()) {
+      count += attributes.size;
     }
     return count;
   });
@@ -270,6 +289,7 @@ export const useEditorStore = defineStore("editor", () => {
     newEntityIds.value = new Map();
     deletedEntityIds.value = new Map();
     newAttributeTypes.value = new Map();
+    deletedAttributes.value = new Map();
     newEntityGroups.value = new Set();
     hiddenGroups.value = new Set();
     historyStore.clear();
@@ -471,6 +491,7 @@ export const useEditorStore = defineStore("editor", () => {
 
   function selectEntity(id: number) {
     selectedId.value = id;
+    multiSelectedIds.value = [id];
   }
 
   function clearSelection() {
@@ -501,6 +522,21 @@ export const useEditorStore = defineStore("editor", () => {
     setMultiSelection(ids);
   }
 
+  function pendingOrCurrentValue(groupName: string, id: number, prop: string): unknown {
+    const pending = changes.value.get(groupName)?.get(id);
+    if (pending && prop in pending) return pending[prop];
+    const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
+    const dataIndex = rowIndex(groupName, id);
+    return dataIndex !== -1 ? (groupData?.[prop] as unknown[])?.[dataIndex] : undefined;
+  }
+
+  function writeChanges(groupName: string, id: number, prop: string, newValue: unknown) {
+    if (!changes.value.has(groupName)) changes.value.set(groupName, new Map());
+    const groupChanges = changes.value.get(groupName)!;
+    if (!groupChanges.has(id)) groupChanges.set(id, {});
+    groupChanges.get(id)![prop] = newValue;
+  }
+
   function updateProperty(
     entityGroup: string,
     id: number,
@@ -508,23 +544,8 @@ export const useEditorStore = defineStore("editor", () => {
     newValue: unknown,
     skipHistory = false,
   ) {
-    // Determine old value (from pending changes or original data)
-    const pending = changes.value.get(entityGroup)?.get(id);
-    const groupData = dataset.value?.data?.[entityGroup] as Record<string, unknown[]> | undefined;
-    const dataIndex = rowIndex(entityGroup, id);
-    const originalValue =
-      dataIndex !== -1 ? (groupData?.[prop] as unknown[])?.[dataIndex] : undefined;
-    const oldValue = pending?.[prop] !== undefined ? pending[prop] : originalValue;
-
-    if (!changes.value.has(entityGroup)) {
-      changes.value.set(entityGroup, new Map());
-    }
-    const groupChanges = changes.value.get(entityGroup)!;
-    if (!groupChanges.has(id)) {
-      groupChanges.set(id, {});
-    }
-    groupChanges.get(id)![prop] = newValue;
-
+    const oldValue = pendingOrCurrentValue(entityGroup, id, prop);
+    writeChanges(entityGroup, id, prop, newValue);
     if (!skipHistory) {
       historyStore.push({
         kind: "property",
@@ -533,6 +554,41 @@ export const useEditorStore = defineStore("editor", () => {
         property: prop,
         oldValue,
         newValue,
+      });
+    }
+  }
+
+  function updatePropertyForIds(
+    groupName: string,
+    ids: number[],
+    prop: string,
+    newValue: unknown,
+  ): void {
+    if (!ids.length || isRestricted(prop)) return;
+    if (isAttributeDeleted(groupName, prop)) return;
+    const oldValues: [number, unknown][] = [];
+    for (const id of ids) {
+      oldValues.push([id, pendingOrCurrentValue(groupName, id, prop)]);
+      writeChanges(groupName, id, prop, newValue);
+    }
+    historyStore.push({
+      kind: "batch-property",
+      entityGroup: groupName,
+      property: prop,
+      oldValues,
+      newValue,
+    });
+  }
+
+  function undoBatchPropertyChanges(cmd: BatchUpdatePropertyCommand) {
+    for (const [id, oldValue] of cmd.oldValues) {
+      undoPropertyChange({
+        kind: "property",
+        entityGroup: cmd.entityGroup,
+        id,
+        property: cmd.property,
+        oldValue,
+        newValue: cmd.newValue,
       });
     }
   }
@@ -639,10 +695,14 @@ export const useEditorStore = defineStore("editor", () => {
     switch (cmd.kind) {
       case "property":
         return undoPropertyChange(cmd);
+      case "batch-property":
+        return undoBatchPropertyChanges(cmd);
       case "geometry":
         return applyGeometry(cmd, cmd.oldGeometryColumns);
       case "delete":
         return restoreEntity(cmd);
+      case "delete-attribute":
+        return restoreAttribute(cmd);
       case "create":
         return deleteEntity(cmd.entityGroup, cmd.id, true);
     }
@@ -652,10 +712,18 @@ export const useEditorStore = defineStore("editor", () => {
     switch (cmd.kind) {
       case "property":
         return updateProperty(cmd.entityGroup, cmd.id, cmd.property, cmd.newValue, true);
+      case "batch-property":
+        for (const [id] of cmd.oldValues) {
+          updateProperty(cmd.entityGroup, id, cmd.property, cmd.newValue, true);
+        }
+        return;
       case "geometry":
         return applyGeometry(cmd, cmd.newGeometryColumns);
       case "delete":
         return deleteEntity(cmd.entityGroup, cmd.id, true);
+      case "delete-attribute":
+        deleteAttribute(cmd.entityGroup, cmd.attribute, true);
+        return;
       case "create":
         return restoreEntity(createdEntitySnapshot(cmd));
     }
@@ -691,6 +759,7 @@ export const useEditorStore = defineStore("editor", () => {
       // Restore selection -> loadDataset resets both to null
       entityGroup.value = savedGroup;
       selectedId.value = savedId;
+      multiSelectedIds.value = savedId !== null ? [savedId] : [];
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e);
     } finally {
@@ -748,7 +817,7 @@ export const useEditorStore = defineStore("editor", () => {
       [groupName]: [...currentFeature, newFeatureWithId],
     };
 
-    // track geometry as changed
+    // track geometry changes
     if (!geometryChanges.value.has(groupName)) {
       geometryChanges.value.set(groupName, new Map());
     }
@@ -781,10 +850,20 @@ export const useEditorStore = defineStore("editor", () => {
     // Select the new entity and switch back to the view mode
     entityGroup.value = groupName;
     selectedId.value = newId;
+    multiSelectedIds.value = [newId];
     editModeKey.value = "view";
   }
 
   const newAttributeTypes = ref<Map<string, Map<string, AttributeValueType>>>(new Map());
+  const deletedAttributes = ref<Map<string, Set<string>>>(new Map());
+
+  function isAttributeDeleted(groupName: string, name: string): boolean {
+    return deletedAttributes.value.get(groupName)?.has(name) ?? false;
+  }
+
+  function isRestricted(name: string): boolean {
+    return isRestrictedAttribute(name, settings.restrictedAttributes);
+  }
 
   function addAttribute(groupName: string, name: string, type: AttributeValueType): boolean {
     const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
@@ -798,6 +877,72 @@ export const useEditorStore = defineStore("editor", () => {
     if (!newAttributeTypes.value.has(groupName)) newAttributeTypes.value.set(groupName, new Map());
     newAttributeTypes.value.get(groupName)!.set(attr, type);
     return true;
+  }
+
+  function deleteAttribute(groupName: string, name: string, skipHistory = false): boolean {
+    const groupData = dataset.value?.data?.[groupName] as Record<string, unknown[]> | undefined;
+    if (!groupData || !(name in groupData)) return false;
+    if (isRestricted(name) || isAttributeDeleted(groupName, name)) return false;
+
+    const removedChanges: [number, unknown][] = [];
+    const groupChanges = changes.value.get(groupName);
+    if (groupChanges) {
+      for (const [id, entityChanges] of groupChanges) {
+        if (name in entityChanges) removedChanges.push([id, entityChanges[name]]);
+      }
+      for (const [id] of removedChanges) revertProperty(groupName, id, name);
+    }
+
+    const declaredType = newAttributeTypes.value.get(groupName)?.get(name) ?? null;
+    const wasNew = declaredType !== null;
+    let columnSnapshot: unknown[] | null = null;
+
+    if (wasNew) {
+      columnSnapshot = [...(groupData[name] as unknown[])];
+      delete groupData[name];
+      newAttributeTypes.value.get(groupName)!.delete(name);
+      triggerRef(dataset);
+    } else {
+      if (!deletedAttributes.value.has(groupName)) {
+        deletedAttributes.value.set(groupName, new Set());
+      }
+      deletedAttributes.value.get(groupName)!.add(name);
+    }
+
+    if (!skipHistory) {
+      historyStore.push({
+        kind: "delete-attribute",
+        entityGroup: groupName,
+        attribute: name,
+        wasNew,
+        declaredType,
+        columnSnapshot,
+        removedChanges,
+      });
+    }
+    return true;
+  }
+
+  function restoreAttribute(cmd: DeleteAttributeCommand) {
+    if (cmd.wasNew) {
+      const groupData = dataset.value?.data?.[cmd.entityGroup] as
+        | Record<string, unknown[]>
+        | undefined;
+      if (!groupData) return;
+      groupData[cmd.attribute] = [...(cmd.columnSnapshot ?? [])];
+      if (cmd.declaredType) {
+        if (!newAttributeTypes.value.has(cmd.entityGroup)) {
+          newAttributeTypes.value.set(cmd.entityGroup, new Map());
+        }
+        newAttributeTypes.value.get(cmd.entityGroup)!.set(cmd.attribute, cmd.declaredType);
+      }
+      triggerRef(dataset);
+    } else {
+      deletedAttributes.value.get(cmd.entityGroup)?.delete(cmd.attribute);
+    }
+    for (const [id, value] of cmd.removedChanges) {
+      writeChanges(cmd.entityGroup, id, cmd.attribute, value);
+    }
   }
 
   const newEntityGroups = ref<Set<string>>(new Set());
@@ -879,6 +1024,9 @@ export const useEditorStore = defineStore("editor", () => {
     if (selectedId.value === id && entityGroup.value === groupName) {
       selectedId.value = null;
     }
+    if (entityGroup.value === groupName && multiSelectedIds.value.includes(id)) {
+      multiSelectedIds.value = multiSelectedIds.value.filter((selected) => selected !== id);
+    }
 
     // Push to history of undo/redo works. Skip for redo replays
     // index === -1 means nothing was removed
@@ -933,6 +1081,7 @@ export const useEditorStore = defineStore("editor", () => {
     boundingBox,
     currentGroupGeometryType,
     isDirty,
+    isRestricted,
     dirtyCount,
     groupsToBeEmptied,
     generatePatch,
@@ -942,6 +1091,11 @@ export const useEditorStore = defineStore("editor", () => {
     addAttribute,
     addEntityGroup,
     deleteEntity,
+    deletedAttributes,
+    selectedIds,
+    isAttributeDeleted,
+    updatePropertyForIds,
+    deleteAttribute,
     setEditMode,
     setMultiSelection,
     selectInPolygon,

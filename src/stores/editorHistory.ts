@@ -5,6 +5,7 @@ on the dataset editor.
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import type { GeometryData } from "@movici-flow-lib/utils/geoJsonBridge";
+import type { AttributeValueType } from "@movici-flow-lib/utils/editorAttributes";
 import type { Feature } from "geojson";
 
 export interface UpdatePropertyCommand {
@@ -46,7 +47,31 @@ export interface CreateCommand {
   geometryColumns: GeometryData;
 }
 
-export type Command = UpdatePropertyCommand | GeometryCommand | DeleteCommand | CreateCommand;
+export interface BatchUpdatePropertyCommand {
+  kind: "batch-property";
+  entityGroup: string;
+  property: string;
+  oldValues: [number, unknown][];
+  newValue: unknown;
+}
+
+export interface DeleteAttributeCommand {
+  kind: "delete-attribute";
+  entityGroup: string;
+  attribute: string;
+  wasNew: boolean; // tracks if the attribute is new in the session
+  declaredType: AttributeValueType | null;
+  columnSnapshot: unknown[] | null;
+  removedChanges: [number, unknown][]; // pending changes that a deletion dropped
+}
+
+export type Command =
+  | UpdatePropertyCommand
+  | BatchUpdatePropertyCommand
+  | GeometryCommand
+  | DeleteCommand
+  | DeleteAttributeCommand
+  | CreateCommand;
 
 export const useEditorHistoryStore = defineStore("editorHistory", () => {
   const undoStack = ref<Command[]>([]);
