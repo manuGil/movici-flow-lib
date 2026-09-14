@@ -1,20 +1,37 @@
 <template>
   <div class="property-editor">
-    <div v-if="!entity" class="has-text-grey is-size-7 p-4">Select an entity on the map</div>
+    <div v-if="!entityGroup" class="has-text-grey is-size-7 p-4">Select an entity group</div>
+    <div v-else-if="!hasSelection" class="has-text-grey is-size-7 p-4">
+      Select one or more features on the map
+    </div>
+
     <div v-else>
       <div
-        v-for="(value, key) in editableProperties"
+        v-for="key in attributes"
         :key="key"
         class="property-row is-flex is-align-items-center mb-2"
       >
+        <o-button
+          v-if="!store.isRestricted(key)"
+          class="delete-attribute"
+          icon-left="trash"
+          icon-pack="fas"
+          size="small"
+          variant="white"
+          :title="`Delete attribute '${key}'`"
+          @click="emit('delete-attribute', key)"
+        />
+        <span v-else class="delete-attribute-spacer" />
+
         <span
           class="property-key is-size-7 has-text-grey-dark mr-2"
-          :title="String(key)"
-          :class="{ 'has-text-warning-dark has-text-weight-bold': isModified(String(key)) }"
+          :title="key"
+          :class="{ 'has-text-warning-dark has-text-weight-bold': isModified(key) }"
         >
-          {{ String(key) }}
+          {{ key }}
           <span v-if="isModified(String(key))">*</span>
         </span>
+
         <div class="is-flex-grow-1">
           <o-select
             v-if="inputKind(String(key)) === 'enum'"
@@ -22,6 +39,7 @@
             @update:model-value="(v: unknown) => emit('change', String(key), Number(v))"
             size="small"
           >
+            <option v-if="isMulti" :value="undefined" disabled>new value</option>
             <option
               v-for="(label, index) in getEnumOptions(String(key))"
               :key="index"
@@ -30,10 +48,21 @@
               {{ label }}
             </option>
           </o-select>
+          <o-select
+            v-else-if="inputKind(key) === 'boolean' && isMulti"
+            :model-value="boolSelectValue(key)"
+            @update:model-value="(v: string) => v !== '' && emit('change', key, v === 'true')"
+            size="small"
+          >
+            <option value="" disabled>new value</option>
+            <option value="true">true</option>
+            <option value="false">false</option>
+          </o-select>
+          <!-- Single selection -->
           <o-switch
-            v-else-if="inputKind(String(key)) === 'boolean'"
-            :model-value="Boolean(currentValue(String(key)))"
-            @update:model-value="(v: boolean) => emit('change', String(key), v)"
+            v-else-if="inputKind(key) === 'boolean'"
+            :model-value="Boolean(currentValue(key))"
+            @update:model-value="(v: boolean) => emit('change', key, v)"
             size="small"
           />
           <o-input
@@ -43,14 +72,16 @@
             :model-value="displayValue(String(key))"
             @change="(e: Event) => onNumberChange(String(key), e)"
             size="small"
+            :placeholder="isMulti ? 'new value' : undefined"
           />
           <!-- Read only: entity identity and geometry -->
           <span
-            v-else-if="inputKind(String(key)) === 'readonly'"
+            v-else-if="inputKind(key) === 'readonly'"
             class="is-size-7 has-text-grey is-family-monospace"
-            :title="isGeometry(String(key)) ? String(currentGeometryValue(String(key))) : undefined"
           >
-            {{ isGeometry(String(key)) ? geometryDisplay(String(key)) : displayValue(String(key)) }}
+            {{
+              isMulti ? "-" : isGeometryAttribute(key) ? geometryDisplay(key) : displayValue(key)
+            }}
           </span>
           <!-- Fallback (string) -->
           <o-input
@@ -61,6 +92,7 @@
               (e: Event) => emit('change', String(key), (e.target as HTMLInputElement).value)
             "
             size="small"
+            :placeholder="isMulti ? 'new value' : undefined"
           />
         </div>
       </div>
@@ -76,26 +108,26 @@ import {
   type AttributeValueKind,
   type AttributeValueType,
 } from "@movici-flow-lib/stores/editor";
+import { isGeometryAttribute } from "@movici-flow-lib/utils/editorAttributes";
 
 const props = defineProps<{
   entity: Record<string, unknown> | null;
   entityGroup: string | null;
+  attributes: string[];
+  selectedIds: number[]; // edits apply only to these ids.
   generalEnums: Record<string, string[]>;
   enumNames: Record<string, string>; // PropNames become enumNames
 }>();
 
 const emit = defineEmits<{
   (e: "change", prop: string, value: unknown): void;
+  (e: "delete-attribute", prop: string): void;
 }>();
 
-const store = useEditorStore();
-const editableProperties = computed(() => {
-  return props.entity ?? {};
-});
+const isMulti = computed(() => props.selectedIds.length > 1);
+const hasSelection = computed(() => props.selectedIds.length > 0);
 
-function isGeometry(key: string): boolean {
-  return key.startsWith("geometry.");
-}
+const store = useEditorStore();
 
 function declaredType(key: string): AttributeValueType | null {
   if (!props.entityGroup) return null;
@@ -126,8 +158,13 @@ function columnType(key: string): AttributeValueKind | null {
   return declared ? attributeValueKind(declared) : null;
 }
 
+function boolSelectValue(key: string) {
+  const v = commonPendinValue(key);
+  return v === undefined ? "" : String(Boolean(v));
+}
+
 function inputKind(key: string): "enum" | "boolean" | "number" | "readonly" | "text" {
-  if (key === "id" || isGeometry(key)) return "readonly";
+  if (store.isRestricted(key)) return "readonly";
   if (getEnumOptions(key)) return "enum";
   const t = columnType(key);
   if (t === "boolean") return "boolean";
@@ -179,6 +216,14 @@ function onNumberChange(key: string, e: Event) {
 }
 
 function isModified(key: string): boolean {
+  if (!props.entityGroup) return false;
+  if (isMulti.value) {
+    const groupChanges = store.changes.get(props.entityGroup);
+    return props.selectedIds.some((id) => {
+      const pending = groupChanges?.get(id);
+      return pending !== undefined && key in pending;
+    });
+  }
   if (!props.entityGroup || store.selectedId === null) return false;
   const pending = store.changes.get(props.entityGroup)?.get(store.selectedId);
   if (pending !== undefined && key in pending) return true;
@@ -187,6 +232,7 @@ function isModified(key: string): boolean {
 }
 
 function currentValue(key: string): unknown {
+  if (isMulti.value) return commonPendinValue(key);
   if (!props.entityGroup || store.selectedId === null) return props.entity?.[key];
   const pending = store.changes.get(props.entityGroup)?.get(store.selectedId);
   if (pending && key in pending) return pending[key];
@@ -198,6 +244,23 @@ function getEnumOptions(key: string): string[] | null {
   if (!enumName) return null;
   return props.generalEnums[enumName] ?? null;
 }
+
+function commonPendinValue(key: string): unknown {
+  if (!props.entityGroup) return undefined;
+  const groupChanges = store.changes.get(props.entityGroup);
+  if (!groupChanges) return undefined;
+  let common: unknown;
+  let seen = false;
+  for (const id of props.selectedIds) {
+    const pending = groupChanges.get(id);
+    if (!pending || !(key in pending)) return undefined;
+    if (!seen) {
+      common = pending[key];
+      seen = true;
+    } else if (pending[key] !== common) return undefined;
+  }
+  return seen ? common : undefined;
+}
 </script>
 
 <style scoped lang="scss">
@@ -207,10 +270,15 @@ function getEnumOptions(key: string): string[] | null {
 .property-row {
   gap: 0.5rem;
   .property-key {
-    min-width: 140px;
-    max-width: 140px;
+    min-width: 120px;
+    max-width: 120px;
     word-break: break-all;
     flex-shrink: 0;
   }
+}
+.delete-attribute,
+.delete-attribute-spacer {
+  width: 1.75rem;
+  flex-shrink: 0;
 }
 </style>
