@@ -37,8 +37,17 @@ import {
   type GeometryCommand,
   type CreateCommand,
 } from "@movici-flow-lib/stores/editorHistory";
+import {
+  attributeValueKind,
+  isRestrictedAttribute,
+  type AttributeValueType,
+  type AttributeValueKind,
+} from "@movici-flow-lib/utils/editorAttributes";
 
 type Changes = Map<string, Map<number, Record<string, unknown>>>;
+
+export { attributeValueKind };
+export type { AttributeValueType, AttributeValueKind };
 
 export type EditModeKey =
   | "view"
@@ -53,12 +62,6 @@ export type EditModeKey =
 
 // selection modes that survive setEditMode
 export const MULTI_SELECT_MODES: EditModeKey[] = ["select-rectangle", "select-polygon"];
-export type AttributeValueType = "integer" | "float" | "string" | "boolean";
-export type AttributeValueKind = "number" | "string" | "boolean";
-
-export function attributeValueKind(type: AttributeValueType): AttributeValueKind {
-  return type === "integer" || type === "float" ? "number" : type;
-}
 
 export const useEditorStore = defineStore("editor", () => {
   const datasetUUID = ref<string | null>(null);
