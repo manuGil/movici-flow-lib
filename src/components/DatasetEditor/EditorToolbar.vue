@@ -70,6 +70,16 @@
         title="Save"
       >
       </o-button>
+      <o-button
+        class="sidebar-toggle"
+        :icon-left="sidebar.collapsed.value ? 'angle-left' : 'angle-right'"
+        icon-pack="fas"
+        size="small"
+        variant="white"
+        :title="sidebar.collapsed.value ? 'Show property editor' : 'Hide property editor'"
+        @click="sidebar.toggle()"
+      >
+      </o-button>
     </div>
     <o-field horizontal nowrap size="small" :label="'Entity group:'" label-class="is-size-7">
       <o-select
@@ -94,14 +104,14 @@ import { useEditorStore } from "@movici-flow-lib/stores/editor";
 import { useEditorHistoryStore } from "@movici-flow-lib/stores/editorHistory";
 import { useDialog } from "@movici-flow-lib/baseComposables/useDialog";
 import { useProgrammatic } from "@oruga-ui/oruga-next";
+import { useEditorSidebar } from "@movici-flow-lib/composables/useEditorSidebar";
 import NewAttributeTool from "./NewAttributeTool.vue";
 import NewEntityGroupTool from "./NewEntityGroupTool.vue";
 
 const store = useEditorStore();
 const historyStore = useEditorHistoryStore();
 const { openDialog } = useDialog();
-
-store.entityGroupNames;
+const sidebar = useEditorSidebar();
 
 function onDiscard() {
   openDialog({
@@ -118,16 +128,36 @@ function onDiscard() {
   });
 }
 
+const pendingAttributeDeletions = computed(() => {
+  const names: string[] = [];
+  for (const [group, attrs] of store.deletedAttributes) {
+    for (const attr of attrs) names.push(`${group}.${attr}`);
+  }
+  return names;
+});
+
 function onSave() {
   const emptied = store.groupsToBeEmptied;
+  const droppedAttributes = pendingAttributeDeletions.value;
   if (!emptied.length) return void store.save();
 
-  openDialog({
-    title: "Delete entity group?",
-    message:
+  const parts: string[] = [];
+  if (emptied.length) {
+    parts.push(
       `Saving will delete all entities from ${emptied.map((n) => `'${n}'`).join(", ")} group. ` +
-      `It will also delete the emptied entity group. ` +
-      `This cannot be undone.`,
+        `It will also delete the emptied entity group. This cannot be undone.`,
+    );
+  }
+  if (droppedAttributes.length) {
+    // TODO: Revise after checking backend implementation.
+    parts.push(
+      `Attribute deletion is not supported by the backend yet: ${droppedAttributes.join(", ")} will not be removed.`,
+    );
+  }
+
+  openDialog({
+    title: emptied.length ? "Delete entity group?" : "Some chagnes will not be saved",
+    message: parts.join("<br><br>"),
     variant: "danger",
     hasIcon: true,
     cancelText: "Cancel",
@@ -198,5 +228,9 @@ const selectedGroup = computed({
   &:hover {
     background-color: rgba($green, 0.3);
   }
+}
+.sidebar-toggle {
+  order: 2;
+  margin-left: 0.75rem;
 }
 </style>

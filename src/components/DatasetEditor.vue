@@ -22,7 +22,7 @@
           </template>
         </Deck>
       </div>
-      <EditorSidebar class="editor-sidebar" />
+      <EditorSidebar class="editor-sidebar" :class="{ 'is-collapsed': sidebar.collapsed.value }" />
     </div>
   </div>
 </template>
@@ -42,13 +42,14 @@ import EditorSidebar from "./DatasetEditor/PropertySidebar.vue";
 import EditModeToolbar from "./DatasetEditor/EditModeToolbar.vue";
 import EditorLayerSelector from "./DatasetEditor/EditorLayerSelector.vue";
 import { MULTI_SELECT_MODES } from "../stores/editor";
+import { useEditorSidebar } from "../composables/useEditorSidebar";
 
 const props = defineProps<{
   modelValue: ShortDataset;
 }>();
 
 const store = useEditorStore();
-
+const sidebar = useEditorSidebar();
 const { layers } = useEditorLayer();
 
 const DEFAULT_VIEWSTATE = useMoviciSettings().settings.defaultViewState;
@@ -117,6 +118,8 @@ function padBBox(
 }
 
 async function loadAndInit(uuid: string) {
+  sidebar.initForDataset(uuid);
+  await store.loadDataset(uuid);
   // Only loads a single dataset. loadDataset also ensures the projection and
   // builds the wgs84 features.
   await store.loadDataset(uuid);
@@ -168,5 +171,13 @@ watch(
   min-width: 280px;
   max-width: 480px;
   flex-shrink: 0;
+  transition:
+    width 0.3s ease,
+    min-width 0.3s ease;
+  &.is-collapsed {
+    width: 0;
+    min-width: 0;
+    border-left: 0;
+  }
 }
 </style>
