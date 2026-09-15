@@ -1,9 +1,20 @@
 <template>
   <aside class="editor-sidebar">
-    <div class="sidebar-header p-3 border-bottom">
-      <p>Property Editor</p>
+    <div class="sidebar-header p-3">
+      <div class="is-flex is-align-items-center">
+        <p class="is-flex-grow-1">{{ groupLabel || "Property Editor" }}</p>
+        <o-button
+          icon-lef="times"
+          icon-pack="fas"
+          size="small"
+          variant="white"
+          title="Hide property editor"
+          @click="sidebar.setCollapsed(true)"
+        />
+      </div>
+
       <div class="is-size-7 has-text-grey mt-1">
-        {{ entityCount }} entities
+        {{ selectionLabel }}
         <span v-if="modifiedCount > 0" class="has-text-warning-dark ml-2">
           ({{ modifiedCount }} modified)
         </span>
@@ -13,9 +24,12 @@
       <PropertyEditor
         :entity="store.selectedEntity"
         :entity-group="store.entityGroup"
+        :attributes="attributes"
+        :selected-ids="store.selectedIds"
         :general-enums="generalEnums"
         :enum-names="enumNames"
         @change="onPropertyChange"
+        @delete-attribute="onDeleteAttribute"
       />
     </div>
   </aside>
@@ -24,9 +38,48 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useEditorStore } from "@movici-flow-lib/stores/editor";
+import { useDialog } from "@movici-flow-lib/baseComposables/useDialog";
+import { useEditorSidebar } from "@movici-flow-lib/composables/useEditorSidebar";
 import PropertyEditor from "./PropertyEditor.vue";
+import { snakeToFriendly } from "@movici-flow-lib/utils/filters.ts";
 
 const store = useEditorStore();
+const sidebar = useEditorSidebar();
+const { openDialog } = useDialog();
+
+const groupLabel = computed(() => snakeToFriendly(store.entityGroup));
+
+const attributes = computed<string[]>(() => {
+  const group = store.entityGroup;
+  if (!group) return [];
+  const groupData = store.dataset?.data?.[group] as Record<string, unknown[]> | undefined;
+  if (!groupData) return [];
+  return Object.keys(groupData).filter((key) => !store.isAttributeDeleted(group, key));
+});
+
+const selectionLabel = computed(
+  () => `${store.selectedIds.length} of ${entityCount.value} selected`,
+);
+
+function onPropertyChange(prop: string, value: unknown) {
+  if (!store.entityGroup || !store.selectedIds.length) return;
+  store.updatePropertyForIds(store.entityGroup, store.selectedIds, prop, value);
+}
+
+function onDeleteAttribute(prop: string) {
+  const group = store.entityGroup;
+  if (!group) return;
+  openDialog({
+    title: "Delete attribute?",
+    message:
+      `Attribute '${prop}' will be removed from entity group '${group}'. ` +
+      `You can undo this until the datase is saved.`,
+    variant: "danger",
+    hasIcon: true,
+    confirmButtonText: "Yes. Delete",
+    onConfirm: () => store.deleteAttribute(group, prop),
+  });
+}
 
 const entityCount = computed(() => {
   if (!store.dataset?.data || !store.entityGroup) return 0;
@@ -54,11 +107,7 @@ const enumNames = computed<Record<string, string>>(() => {
   // "operational.power_source" -> general.enum["power_source"]
   const result: Record<string, string> = {};
   if (!store.entityGroup) return result;
-  const groupData = store.dataset?.data?.[store.entityGroup] as
-    | Record<string, unknown[]>
-    | undefined;
-  if (!groupData) return result;
-  for (const key of Object.keys(groupData)) {
+  for (const key of attributes.value) {
     const suffix = key.split(".").pop() ?? key;
     if (generalEnums.value[suffix]) {
       result[key] = suffix;
@@ -66,11 +115,6 @@ const enumNames = computed<Record<string, string>>(() => {
   }
   return result;
 });
-
-function onPropertyChange(prop: string, value: unknown) {
-  if (!store.entityGroup || store.selectedId === null) return;
-  store.updateProperty(store.entityGroup, store.selectedId, prop, value);
-}
 </script>
 
 <style scoped lang="scss">
@@ -89,9 +133,6 @@ function onPropertyChange(prop: string, value: unknown) {
   .sidebar-content {
     flex: 1;
     overflow-y: auto;
-  }
-  .add-row {
-    gap: 0.25rem;
   }
 }
 </style>
