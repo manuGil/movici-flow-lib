@@ -70,16 +70,6 @@
         title="Save"
       >
       </o-button>
-      <o-button
-        class="sidebar-toggle"
-        :icon-left="sidebar.collapsed.value ? 'angle-left' : 'angle-right'"
-        icon-pack="fas"
-        size="small"
-        variant="white"
-        :title="sidebar.collapsed.value ? 'Show property editor' : 'Hide property editor'"
-        @click="sidebar.toggle()"
-      >
-      </o-button>
     </div>
     <o-field horizontal nowrap size="small" :label="'Entity group:'" label-class="is-size-7">
       <o-select
@@ -94,6 +84,17 @@
         </option>
       </o-select>
     </o-field>
+    <o-button
+      class="sidebar-toggle"
+      :label="'Properties'"
+      :icon-left="sidebar.collapsed.value ? 'angle-left' : 'angle-right'"
+      icon-pack="fas"
+      size="small"
+      variant="white"
+      :title="sidebar.collapsed.value ? 'Show property editor' : 'Hide property editor'"
+      @click="sidebar.toggle()"
+    >
+    </o-button>
   </nav>
 </template>
 
@@ -127,6 +128,8 @@ function onDiscard() {
     onConfirm: () => store.discardChanges(),
   });
 }
+
+// CONTINUE: plan tests, and improve looks
 
 const pendingAttributeDeletions = computed(() => {
   const names: string[] = [];
