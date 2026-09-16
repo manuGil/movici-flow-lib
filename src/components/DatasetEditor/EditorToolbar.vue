@@ -71,7 +71,7 @@
       >
       </o-button>
     </div>
-    <o-field horizontal nowrap size="small" :label="'Entity group:'" label-class="is-size-7">
+    <o-field horizontal nowrap size="small" :label="'Active group:'" label-class="is-size-7">
       <o-select
         v-model="selectedGroup"
         size="small"
@@ -196,7 +196,10 @@ const selectedGroup = computed({
   }
 
   :deep(.field-label) {
+    flex: 0 0 auto;
     margin-bottom: 0;
+    margin-right: 0.5rem;
+    white-space: nowrap;
   }
 
   .dataset-name {
