@@ -4,10 +4,9 @@
       <div class="is-flex is-align-items-center">
         <p class="is-flex-grow-1">{{ groupLabel || "Property Editor" }}</p>
         <o-button
-          icon-lef="times"
-          icon-pack="fas"
+          icon-left="times"
+          icon-pack="far"
           size="small"
-          variant="white"
           title="Hide property editor"
           @click="sidebar.setCollapsed(true)"
         />

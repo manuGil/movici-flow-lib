@@ -4,7 +4,6 @@
     <div v-else-if="!hasSelection" class="has-text-grey is-size-7 p-4">
       Select one or more features on the map
     </div>
-
     <div v-else>
       <div
         v-for="key in attributes"
