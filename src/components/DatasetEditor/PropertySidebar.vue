@@ -1,37 +1,45 @@
 <template>
-  <aside class="editor-sidebar">
-    <div class="sidebar-header p-3">
-      <div class="is-flex is-align-items-center">
-        <p class="is-flex-grow-1">{{ groupLabel || "Property Editor" }}</p>
-        <o-button
-          icon-left="times"
-          icon-pack="far"
-          size="small"
-          title="Hide property editor"
-          @click="sidebar.setCollapsed(true)"
+  <WidgetContainer
+    class="property-sidebar"
+    collapsable
+    :collapsed="sidebar.collapsed.value"
+    @update:collapsed="sidebar.setCollapsed"
+  >
+    <template #collapse-title="{ collapsed }">
+      <div class="is-flex is-flex-direction-row-reverse is-align-items-center is-clickable">
+        <o-icon
+          :title="collapes ? 'Show property editor' : 'Hide property editor'"
+          class="collapsed-icon"
+          pack="far"
+          :icon="collapsed ? 'edit' : 'minus-square'"
+        />
+
+        <div class="is-flex-grow-1" v-show="!collapsed">
+          <p class="label mb-0">{{ groupLabel || "Property Editor" }}</p>
+          <p class="is-size-7 has-text-grey">
+            {{ selectionLabel }}
+            <span v-if="modifiedCount > 0" class="has-text-warning-dark ml-2">
+              ({{ modifiedCount }} modified)
+            </span>
+          </p>
+        </div>
+      </div>
+    </template>
+    <template #collapse-content>
+      <div class="sidebar-content mt-2">
+        <PropertyEditor
+          :entity="store.selectedEntity"
+          :entity-group="store.entityGroup"
+          :attributes="attributes"
+          :selected-ids="store.selectedIds"
+          :general-enums="generalEnums"
+          :enum-names="enumNames"
+          @change="onPropertyChange"
+          @delete-attribute="onDeleteAttribute"
         />
       </div>
-
-      <div class="is-size-7 has-text-grey mt-1">
-        {{ selectionLabel }}
-        <span v-if="modifiedCount > 0" class="has-text-warning-dark ml-2">
-          ({{ modifiedCount }} modified)
-        </span>
-      </div>
-    </div>
-    <div class="sidebar-content p-3">
-      <PropertyEditor
-        :entity="store.selectedEntity"
-        :entity-group="store.entityGroup"
-        :attributes="attributes"
-        :selected-ids="store.selectedIds"
-        :general-enums="generalEnums"
-        :enum-names="enumNames"
-        @change="onPropertyChange"
-        @delete-attribute="onDeleteAttribute"
-      />
-    </div>
-  </aside>
+    </template>
+  </WidgetContainer>
 </template>
 
 <script setup lang="ts">
@@ -117,21 +125,16 @@ const enumNames = computed<Record<string, string>>(() => {
 </script>
 
 <style scoped lang="scss">
-.editor-sidebar {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  border-left: 1px solid $grey-lighter;
-  background: white;
+.property-sidebar {
+  width: 360px;
+}
 
-  .sidebar-header {
-    border-bottom: 1px solid $grey-lighter;
-    flex-shrink: 0;
-  }
-  .sidebar-content {
-    flex: 1;
-    overflow-y: auto;
-  }
+.sidebar-header {
+  border-bottom: 1px solid $grey-lighter;
+  flex-shrink: 0;
+}
+.sidebar-content {
+  max-height: 55vh;
+  overflow-y: auto;
 }
 </style>

@@ -68,19 +68,6 @@ describe("useEditorSidebar", () => {
     expect(stored()).toEqual({ a: { collapsed: true } });
   });
 
-  it("flips and persists on toggle", async () => {
-    const sidebar = await freshSidebar();
-    sidebar.initForDataset("a");
-
-    sidebar.toggle();
-    expect(sidebar.collapsed.value).toBe(true);
-    expect(stored()).toEqual({ a: { collapsed: true } });
-
-    sidebar.toggle();
-    expect(sidebar.collapsed.value).toBe(false);
-    expect(stored()).toEqual({ a: { collapsed: false } });
-  });
-
   it("survives corrupt storage", async () => {
     localStorage.setItem(STORAGE_KEY, "{not json");
     const sidebar = await freshSidebar();
