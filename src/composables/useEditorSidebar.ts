@@ -41,9 +41,5 @@ export function useEditorSidebar() {
     writeAll(all);
   }
 
-  function toggle() {
-    setCollapsed(!collapsed.value);
-  }
-
-  return { collapsed, initForDataset, setCollapsed, toggle };
+  return { collapsed, initForDataset, setCollapsed };
 }

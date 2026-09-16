@@ -84,17 +84,6 @@
         </option>
       </o-select>
     </o-field>
-    <o-button
-      class="sidebar-toggle"
-      :label="'Properties'"
-      :icon-left="sidebar.collapsed.value ? 'angle-left' : 'angle-right'"
-      icon-pack="fas"
-      size="small"
-      variant="white"
-      :title="sidebar.collapsed.value ? 'Show property editor' : 'Hide property editor'"
-      @click="sidebar.toggle()"
-    >
-    </o-button>
   </nav>
 </template>
 
@@ -105,14 +94,12 @@ import { useEditorStore } from "@movici-flow-lib/stores/editor";
 import { useEditorHistoryStore } from "@movici-flow-lib/stores/editorHistory";
 import { useDialog } from "@movici-flow-lib/baseComposables/useDialog";
 import { useProgrammatic } from "@oruga-ui/oruga-next";
-import { useEditorSidebar } from "@movici-flow-lib/composables/useEditorSidebar";
 import NewAttributeTool from "./NewAttributeTool.vue";
 import NewEntityGroupTool from "./NewEntityGroupTool.vue";
 
 const store = useEditorStore();
 const historyStore = useEditorHistoryStore();
 const { openDialog } = useDialog();
-const sidebar = useEditorSidebar();
 
 function onDiscard() {
   openDialog({
@@ -231,9 +218,5 @@ const selectedGroup = computed({
   &:hover {
     background-color: rgba($green, 0.3);
   }
-}
-.sidebar-toggle {
-  order: 2;
-  margin-left: 0.75rem;
 }
 </style>

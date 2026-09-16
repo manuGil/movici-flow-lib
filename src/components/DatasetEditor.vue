@@ -15,6 +15,7 @@
           </template>
           <template #control-right>
             <EditorLayerSelector />
+            <EditorSidebar />
           </template>
           <!-- Hack to leave click registration 'on' because Deck doesn't provide direct event access-->
           <template #control-zero="{ on }">
@@ -179,5 +180,8 @@ watch(
     min-width: 0;
     border-left: 0;
   }
+}
+:deep(.map-control-right) {
+  max-height: calc(100% - 20px);
 }
 </style>
