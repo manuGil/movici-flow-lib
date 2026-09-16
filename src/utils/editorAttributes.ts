@@ -7,7 +7,6 @@ export function attributeValueKind(type: AttributeValueType): AttributeValueKind
 
 // Projects attributes from deletion operations on all datasets
 export const ALWAYS_RESTRICTED_ATTRIBUTES = ["id", "deleted"] as const;
-
 export function isGeometryAttribute(name: string): boolean {
   return name.startsWith("geometry.");
 }
