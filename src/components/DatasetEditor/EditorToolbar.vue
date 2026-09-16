@@ -116,8 +116,6 @@ function onDiscard() {
   });
 }
 
-// CONTINUE: plan tests, and improve looks
-
 const pendingAttributeDeletions = computed(() => {
   const names: string[] = [];
   for (const [group, attrs] of store.deletedAttributes) {
@@ -191,6 +189,15 @@ const selectedGroup = computed({
   border-bottom: 1px solid $grey-lighter;
   height: 52px;
   flex-shrink: 0;
+
+  :deep(.field.is-horizontal) {
+    align-items: center;
+    margin-bottom: 0;
+  }
+
+  :deep(.field-label) {
+    margin-bottom: 0;
+  }
 
   .dataset-name {
     white-space: nowrap;

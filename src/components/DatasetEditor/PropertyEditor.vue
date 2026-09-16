@@ -73,7 +73,6 @@
             size="small"
             :placeholder="isMulti ? 'new value' : undefined"
           />
-          <!-- Read only: entity identity and geometry -->
           <span
             v-else-if="inputKind(key) === 'readonly'"
             class="is-size-7 has-text-grey is-family-monospace"

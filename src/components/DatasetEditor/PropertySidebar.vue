@@ -8,19 +8,21 @@
     <template #collapse-title="{ collapsed }">
       <div class="is-flex is-flex-direction-row-reverse is-align-items-center is-clickable">
         <o-icon
-          :title="collapes ? 'Show property editor' : 'Hide property editor'"
+          :title="collapsed ? 'Show property editor' : 'Hide property editor'"
           class="collapsed-icon"
           pack="far"
           :icon="collapsed ? 'edit' : 'minus-square'"
         />
 
         <div class="is-flex-grow-1" v-show="!collapsed">
-          <p class="label mb-0">{{ groupLabel || "Property Editor" }}</p>
+          <div class="property-title is-flex is-align-items-baseline">
+            <p class="label mb-0 mr-2">Properties:</p>
+            <span class="is-size-8">
+              {{ groupLabel || "Property Editor" }}
+            </span>
+          </div>
           <p class="is-size-7 has-text-grey">
             {{ selectionLabel }}
-            <span v-if="modifiedCount > 0" class="has-text-warning-dark ml-2">
-              ({{ modifiedCount }} modified)
-            </span>
           </p>
         </div>
       </div>
@@ -43,12 +45,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { useEditorStore } from "@movici-flow-lib/stores/editor";
 import { useDialog } from "@movici-flow-lib/baseComposables/useDialog";
 import { useEditorSidebar } from "@movici-flow-lib/composables/useEditorSidebar";
 import PropertyEditor from "./PropertyEditor.vue";
 import { snakeToFriendly } from "@movici-flow-lib/utils/filters.ts";
+import WidgetContainer from "@movici-flow-lib/components/mapControls/WidgetContainer.vue";
 
 const store = useEditorStore();
 const sidebar = useEditorSidebar();
