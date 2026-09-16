@@ -23,7 +23,6 @@
           </template>
         </Deck>
       </div>
-      <EditorSidebar class="editor-sidebar" :class="{ 'is-collapsed': sidebar.collapsed.value }" />
     </div>
   </div>
 </template>
@@ -167,20 +166,6 @@ watch(
   overflow: hidden;
 }
 
-.editor-sidebar {
-  width: 360px;
-  min-width: 280px;
-  max-width: 480px;
-  flex-shrink: 0;
-  transition:
-    width 0.3s ease,
-    min-width 0.3s ease;
-  &.is-collapsed {
-    width: 0;
-    min-width: 0;
-    border-left: 0;
-  }
-}
 :deep(.map-control-right) {
   max-height: calc(100% - 20px);
 }
