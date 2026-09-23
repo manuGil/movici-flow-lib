@@ -42,7 +42,7 @@ const drawModes: { key: EditModeKey; label: string; icon: string; geomType: stri
 const visibleModes = computed(() => {
   const geomType = store.currentGroupGeometryType;
   const matchingDrawModes = geomType ? drawModes.filter((m) => m.geomType === geomType) : [];
-  return [...baseModes, ...matchingDrawModes];
+  return [...matchingDrawModes, ...baseModes];
 });
 </script>
 

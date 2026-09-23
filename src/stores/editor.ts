@@ -847,11 +847,10 @@ export const useEditorStore = defineStore("editor", () => {
       geometryColumns: { ...geomColumns },
     });
 
-    // Select the new entity and switch back to the view mode
+    // Select the new entity and stay in current draw mode
     entityGroup.value = groupName;
     selectedId.value = newId;
     multiSelectedIds.value = [newId];
-    editModeKey.value = "view";
   }
 
   const newAttributeTypes = ref<Map<string, Map<string, AttributeValueType>>>(new Map());
@@ -1043,8 +1042,6 @@ export const useEditorStore = defineStore("editor", () => {
         pendingGeometryChanges,
       });
     }
-    // Return to view mode after deletion
-    editModeKey.value = "view";
   }
 
   const hiddenGroups = ref<Set<string>>(new Set());
