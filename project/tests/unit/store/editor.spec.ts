@@ -211,6 +211,7 @@ describe("useEditorStore", () => {
     it("stays in delete mode when the deletion is undone", () => {
       store.setEditMode("delete");
       store.deleteEntity(GROUP, 2);
+      store.undo();
 
       expect(store.editModeKey).toBe("delete");
       expect(store.dirtyCount).toBe(0);
@@ -220,7 +221,7 @@ describe("useEditorStore", () => {
       store.setEditMode("draw-point");
       store.selectEntityGroup(GROUP);
 
-      expect(store.editMode).toBe("view");
+      expect(store.editModeKey).toBe("view");
     });
   });
 
