@@ -144,7 +144,7 @@ function onSave() {
   }
 
   openDialog({
-    title: emptied.length ? "Delete entity group?" : "Some chagnes will not be saved",
+    title: emptied.length ? "Delete entity group?" : "Some changes will not be saved",
     message: parts.join("<br><br>"),
     variant: "danger",
     hasIcon: true,
