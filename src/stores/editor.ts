@@ -67,6 +67,8 @@ export type EditModeKey =
 
 // selection modes that survive setEditMode
 export const MULTI_SELECT_MODES: EditModeKey[] = ["select-rectangle", "select-polygon"];
+// modes where map click creates geometry rather than selecting
+export const DRAW_MODES: EditModeKey[] = ["draw-point", "draw-line", "draw-polygon"];
 
 export const useEditorStore = defineStore("editor", () => {
   const datasetUUID = ref<string | null>(null);
@@ -479,11 +481,7 @@ export const useEditorStore = defineStore("editor", () => {
     selectedId.value = null;
     setGroupVisible(name, true);
     // Reset draw/delete/select modes when switching groups
-    if (
-      ["draw-point", "draw-line", "draw-polygon", "delete", ...MULTI_SELECT_MODES].includes(
-        editModeKey.value,
-      )
-    ) {
+    if ([...DRAW_MODES, "delete", ...MULTI_SELECT_MODES].includes(editModeKey.value)) {
       editModeKey.value = "view";
     }
     multiSelectedIds.value = [];

@@ -41,7 +41,7 @@ import EditorToolbar from "./DatasetEditor/EditorToolbar.vue";
 import EditorSidebar from "./DatasetEditor/PropertySidebar.vue";
 import EditModeToolbar from "./DatasetEditor/EditModeToolbar.vue";
 import EditorLayerSelector from "./DatasetEditor/EditorLayerSelector.vue";
-import { MULTI_SELECT_MODES } from "../stores/editor";
+import { MULTI_SELECT_MODES, DRAW_MODES } from "../stores/editor";
 import { useEditorSidebar } from "../composables/useEditorSidebar";
 
 const props = defineProps<{
@@ -65,7 +65,12 @@ function registerOn(on: (event: "click", callback: Record<string, DeckEventCallb
   on("click", {
     editorClick: (payload) => {
       // Selection modes own map clicks
-      if (MULTI_SELECT_MODES.includes(store.editModeKey)) return;
+      if (
+        MULTI_SELECT_MODES.includes(store.editModeKey) ||
+        DRAW_MODES.includes(store.editModeKey)
+      ) {
+        return;
+      }
 
       const info = payload.pickInfo; //info.object is a GeoJSON feature with properties.__id
       const obj = info?.object as any;

@@ -6,7 +6,7 @@ import {
   DrawPolygonMode,
 } from "@deck.gl-community/editable-layers";
 import type { Layer } from "@deck.gl/core";
-import { useEditorStore } from "../stores/editor";
+import { DRAW_MODES, useEditorStore } from "../stores/editor";
 import { MoviciColors, hexToColorTriple } from "@movici-flow-lib/visualizers/maps/colorMaps";
 import type { Feature, FeatureCollection } from "geojson";
 
@@ -99,13 +99,7 @@ export function useEditorLayer() {
         }
 
         // Draw/delete/translate modes apply only to active group; other groups stay in view mode
-        const isScopeMode = [
-          "draw-point",
-          "draw-line",
-          "draw-polygon",
-          "delete",
-          "translate",
-        ].includes(store.editModeKey);
+        const isScopeMode = [...DRAW_MODES, "delete", "translate"].includes(store.editModeKey);
         const layerMode =
           isScopeMode && groupName !== store.entityGroup ? VIEW_MODE : store.editMode;
 
