@@ -199,6 +199,31 @@ describe("useEditorStore", () => {
     });
   });
 
+  describe("edit modes", () => {
+    it("stay in delete mode after deleting and entity", () => {
+      store.setEditMode("delete");
+      store.deleteEntity(GROUP, 2);
+
+      expect(store.editModeKey).toBe("delete");
+      expect(store.dirtyCount).toBe(1);
+    });
+
+    it("stays in delete mode when the deletion is undone", () => {
+      store.setEditMode("delete");
+      store.deleteEntity(GROUP, 2);
+
+      expect(store.editModeKey).toBe("delete");
+      expect(store.dirtyCount).toBe(0);
+    });
+
+    it("drops a draw mode when the entity group is re-selected", () => {
+      store.setEditMode("draw-point");
+      store.selectEntityGroup(GROUP);
+
+      expect(store.editMode).toBe("view");
+    });
+  });
+
   it.todo(
     "generatePatch emits pending attribute deletions once DatasetPatch supports attribute drops",
   );
