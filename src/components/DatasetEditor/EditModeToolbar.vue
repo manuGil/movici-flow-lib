@@ -10,6 +10,34 @@
         class="mode-btn"
       />
     </o-tooltip>
+    <hr class="toolbar-divider" />
+    <o-tooltip :label="store.snappingEnabled ? 'Snapping on' : 'Snapping off'" position="right">
+      <o-button
+        :variant="store.snappingEnabled ? 'primary' : 'white'"
+        size="small"
+        icon-left="magnet"
+        icon-pack="fas"
+        @click="store.setSnappingEnabled(!store.snappingEnabled)"
+        class="mode-btn"
+      />
+    </o-tooltip>
+    <template v-if="store.snappingEnabled">
+      <o-tooltip
+        v-for="snapType in snapTypeButtons"
+        :key="snapType.type"
+        :label="snapType.label"
+        position="right"
+      >
+        <o-button
+          :variant="store.snapTypes.includes(snapType.type) ? 'info' : 'white'"
+          size="small"
+          :icon-left="snapType.icon"
+          icon-pack="fas"
+          @click="store.toggleSnapType(snapType.type)"
+          class="mode-btn"
+        />
+      </o-tooltip>
+    </template>
   </div>
 </template>
 
@@ -17,6 +45,7 @@
 import { computed } from "vue";
 import { useEditorStore } from "@movici-flow-lib/stores/editor";
 import type { EditModeKey } from "@movici-flow-lib/stores/editor";
+import type { SnapType } from "@movici-flow-lib/utils/snapping";
 
 const store = useEditorStore();
 
@@ -39,6 +68,12 @@ const drawModes: { key: EditModeKey; label: string; icon: string; geomType: stri
   { key: "draw-polygon", label: "Draw polygon", icon: "draw-polygon", geomType: "polygon" },
 ];
 
+const snapTypeButtons: { type: SnapType; label: string; icon: string }[] = [
+  { type: "vertex", label: "Snap to vertices", icon: "circle" },
+  { type: "segment", label: "Snap to segments", icon: "minus" },
+  { type: "endpoint", label: "Snap to line ends", icon: "dot-circle" },
+];
+
 const visibleModes = computed(() => {
   const geomType = store.currentGroupGeometryType;
   const matchingDrawModes = geomType ? drawModes.filter((m) => m.geomType === geomType) : [];
@@ -59,6 +94,13 @@ const visibleModes = computed(() => {
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .toolbar-divider {
+    width: 24px;
+    height: 1px;
+    margin: 2px 4px;
+    background-color: $grey-lighter;
   }
 }
 </style>
