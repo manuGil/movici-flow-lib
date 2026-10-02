@@ -69,9 +69,9 @@ const drawModes: { key: EditModeKey; label: string; icon: string; geomType: stri
 ];
 
 const snapTypeButtons: { type: SnapType; label: string; icon: string }[] = [
-  { type: "vertex", label: "Snap to vertices", icon: "circle" },
-  { type: "segment", label: "Snap to segments", icon: "minus" },
-  { type: "endpoint", label: "Snap to line ends", icon: "dot-circle" },
+  { type: "vertex", label: "Snap to vertex", icon: "circle" },
+  { type: "segment", label: "Snap to segment", icon: "minus" },
+  { type: "endpoint", label: "Snap to endpoint", icon: "dot-circle" },
 ];
 
 const visibleModes = computed(() => {
