@@ -13,7 +13,12 @@
     </template>
     <template #collapse-content>
       <ul class="entities-list is-size-7 mt-2">
-        <li v-for="name in store.entityGroupNames" :key="name" :title="name" class="pl-0 is-flex">
+        <li
+          v-for="name in store.entityGroupNames"
+          :key="name"
+          :title="name"
+          class="pl-0 is-flex is-align-items-center"
+        >
           <o-checkbox
             :model-value="store.isGroupVisible(name)"
             :disabled="name === store.entityGroup"
@@ -22,6 +27,17 @@
           >
             {{ formatEntityNames(name) }} ({{ entityCount(name) }})
           </o-checkbox>
+          <button
+            v-if="store.snappingEnabled"
+            type="button"
+            class="snap-toggle ml-auto"
+            :class="{ 'is-snappable': store.isGroupSnappable(name) }"
+            :disabled="!store.isGroupVisible(name)"
+            :title="snapToggleTitle(name)"
+            @click="store.setGroupSnappable(name, !store.isGroupSnappable(name))"
+          >
+            <o-icon pack="fas" icon="magnet" size="small" />
+          </button>
         </li>
         <li v-if="!store.entityGroupNames.length" class="has-text-grey">No entity group</li>
       </ul>
@@ -37,4 +53,28 @@ const store = useEditorStore();
 const formatEntityNames = (name: string) => upperFirst(snakeToSpaces(name));
 const entityCount = (name: string) =>
   ((store.dataset?.data?.[name]?.["id"] as unknown[]) ?? []).length;
+
+function snapToggleTitle(name: string) {
+  if (!store.isGroupVisible(name)) return "Hidden groups are not snapped";
+  return store.isGroupSnappable(name) ? "Snapping to this group" : "Not snapping to this group";
+}
 </script>
+
+<style scoped lang="scss">
+.snap-toggle {
+  border: none;
+  background: none;
+  padding: 0 0.25rem;
+  cursor: pointer;
+  color: $grey-light;
+
+  &.is-snappable {
+    color: $primary;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+</style>
