@@ -6,7 +6,9 @@ import {
   DrawPolygonMode,
 } from "@deck.gl-community/editable-layers";
 import type { Layer } from "@deck.gl/core";
-import { DRAW_MODES, useEditorStore } from "../stores/editor";
+import { DRAW_MODES, NO_SNAP_TARGETS, useEditorStore } from "../stores/editor";
+import { SnappingEditableGeoJsonLayer } from "../visualizers/layers/SnappingEditableGeoJsonLayer";
+import { SNAP_TOLERANCE_PX } from "../utils/snapping";
 import { MoviciColors, hexToColorTriple } from "@movici-flow-lib/visualizers/maps/colorMaps";
 import type { Feature, FeatureCollection } from "geojson";
 
@@ -109,7 +111,7 @@ export function useEditorLayer() {
           groupLineColor,
         );
 
-        return new EditableGeoJsonLayer({
+        return new SnappingEditableGeoJsonLayer({
           id: `editable-${groupName}`,
           visible: store.isGroupVisible(groupName),
           data: featureCollection,
@@ -129,6 +131,11 @@ export function useEditorLayer() {
           getEditHandlePointOutlineColor: EDIT_HANDLE_OUTLINE_COLOR,
           editHandlePointOutline: true,
           editHandlePointStrokeWidth: 2,
+          // Only the active group's layer snaps; the others get no targets
+          snapTargets: groupName === store.entityGroup ? store.snapTargets : NO_SNAP_TARGETS,
+          snapTypes: store.snapTypes,
+          snapTolerance: SNAP_TOLERANCE_PX,
+          snapTrigger: DRAW_MODES.includes(store.editModeKey) ? "pointer" : "drag",
           //Callback
           onEdit: ((editAction: any) => {
             const { updatedData, editType, editContext } = editAction;
