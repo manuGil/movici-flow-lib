@@ -225,6 +225,78 @@ describe("useEditorStore", () => {
     });
   });
 
+  describe("snapping", () => {
+    function snapTargetIds() {
+      return store.snapTargets.map((f) => f.properties?.__id);
+    }
+
+    beforeEach(() => {
+      store.setSnappingEnabled(true);
+      store.setEditMode("draw-point");
+    });
+
+    it("has no snap targets while snapping is off", () => {
+      store.setSnappingEnabled(false);
+      expect(store.snapTargets).toEqual([]);
+    });
+
+    it("has no snap targets outside the snapping modes", () => {
+      store.setEditMode("view");
+      expect(store.snapTargets).toEqual([]);
+    });
+
+    it("snaps to every entity of a group in a draw mode", () => {
+      expect(snapTargetIds()).toEqual([1, 2, 3]);
+    });
+
+    it("excludes a group that is not snappable", () => {
+      store.setGroupSnappable(GROUP, false);
+
+      expect(store.isGroupSnappable(GROUP)).toBe(false);
+      expect(store.snapTargets).toEqual([]);
+    });
+
+    it("excludes hidden groups", () => {
+      store.setGroupVisible(GROUP, false);
+      expect(store.snapTargets).toEqual([]);
+    });
+
+    it("has no snap targets when all snap types are off", () => {
+      store.toggleSnapType("vertex");
+      store.toggleSnapType("segment");
+
+      expect(store.snapTypes).toEqual([]);
+      expect(store.snapTargets).toEqual([]);
+    });
+
+    it("excludes the edited entity in modify mode", () => {
+      store.setEditMode("modify");
+      store.selectEntity(2);
+
+      expect(snapTargetIds()).toEqual([1, 3]);
+    });
+
+    it("keeps the selected entity snappable in a draw mode", () => {
+      store.selectEntity(2);
+      expect(snapTargetIds()).toEqual([1, 2, 3]);
+    });
+
+    it("keeps group exclusions when the same dataset is reloaded", async () => {
+      store.setGroupSnappable(GROUP, false);
+      await store.loadDataset("d1");
+
+      expect(store.isGroupSnappable(GROUP)).toBe(false);
+    });
+
+    it("resets group exclusions when another dataset is loaded", async () => {
+      store.setGroupSnappable(GROUP, false);
+      await store.loadDataset("d2");
+
+      expect(store.isGroupSnappable(GROUP)).toBe(true);
+      expect(store.snappingEnabled).toBe(true);
+    });
+  });
+
   it.todo(
     "generatePatch emits pending attribute deletions once DatasetPatch supports attribute drops",
   );
