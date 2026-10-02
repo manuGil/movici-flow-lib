@@ -46,6 +46,7 @@ import {
   type AttributeValueKind,
 } from "@movici-flow-lib/utils/editorAttributes";
 import { useMoviciSettings } from "@movici-flow-lib/baseComposables/useMoviciSettings";
+import type { SnapType } from "@movici-flow-lib/utils/snapping";
 
 type Changes = Map<string, Map<number, Record<string, unknown>>>;
 
@@ -69,6 +70,9 @@ export type EditModeKey =
 export const MULTI_SELECT_MODES: EditModeKey[] = ["select-rectangle", "select-polygon"];
 // modes where map click creates geometry rather than selecting
 export const DRAW_MODES: EditModeKey[] = ["draw-point", "draw-line", "draw-polygon"];
+// modes in which the cursor snaps to existing geometry
+export const SNAP_MODES: EditModeKey[] = [...DRAW_MODES, "modify"];
+export const NO_SNAP_TARGETS: Feature[] = [];
 
 export const useEditorStore = defineStore("editor", () => {
   const datasetUUID = ref<string | null>(null);
@@ -280,6 +284,7 @@ export const useEditorStore = defineStore("editor", () => {
   let loadToken = 0;
 
   async function loadDataset(uuid: string) {
+    if (uuid !== datasetUUID.value) snapExcludedGroups.value = new Set();
     const token = ++loadToken;
     datasetUUID.value = null;
     dataset.value = null;
@@ -1052,6 +1057,45 @@ export const useEditorStore = defineStore("editor", () => {
     return !hiddenGroups.value.has(name);
   }
 
+  const snappingEnabled = ref(false);
+  const snapTypes = ref<SnapType[]>(["vertex", "segment"]);
+  // Every group, also ones created later, is a snap target by default
+  const snapExcludedGroups = ref<Set<string>>(new Set());
+
+  function setSnappingEnabled(enabled: boolean) {
+    snappingEnabled.value = enabled;
+  }
+  function toggleSnapType(type: SnapType) {
+    snapTypes.value = snapTypes.value.includes(type)
+      ? snapTypes.value.filter((t) => t !== type)
+      : [...snapTypes.value, type];
+  }
+  function setGroupSnappable(name: string, snappable: boolean) {
+    if (snappable) snapExcludedGroups.value.delete(name);
+    else snapExcludedGroups.value.add(name);
+  }
+  function isGroupSnappable(name: string) {
+    return !snapExcludedGroups.value.has(name);
+  }
+
+  // Features the cursor can snap to in the current mode.
+  const snapTargets = computed<Feature[]>(() => {
+    if (!snappingEnabled.value || !snapTypes.value.length) return NO_SNAP_TARGETS;
+    if (!SNAP_MODES.includes(editModeKey.value)) return NO_SNAP_TARGETS;
+    // While modifying, the edited feature is not a target.
+    const excluded = new Set(editModeKey.value === "modify" ? selectedIds.value : []);
+    const targets: Feature[] = [];
+    for (const name of entityGroupNames.value) {
+      if (!isGroupSnappable(name) || !isGroupVisible(name)) continue;
+      const isActive = name === entityGroup.value;
+      for (const feature of wgs84Features.value[name] ?? []) {
+        if (isActive && excluded.has(feature.properties?.__id as number)) continue;
+        targets.push(feature);
+      }
+    }
+    return targets;
+  });
+
   return {
     datasetUUID,
     dataset,
@@ -1061,6 +1105,13 @@ export const useEditorStore = defineStore("editor", () => {
     hiddenGroups,
     setGroupVisible,
     isGroupVisible,
+    snappingEnabled,
+    snapTypes,
+    snapTargets,
+    setSnappingEnabled,
+    toggleSnapType,
+    setGroupSnappable,
+    isGroupSnappable,
     geometryChanges,
     wgs84Features,
     newEntityIds,
