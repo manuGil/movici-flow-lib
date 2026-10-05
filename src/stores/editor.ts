@@ -64,7 +64,8 @@ export type EditModeKey =
   | "draw-polygon"
   | "delete"
   | "select-rectangle"
-  | "select-polygon";
+  | "select-polygon"
+  | "measure";
 
 // selection modes that survive setEditMode
 export const MULTI_SELECT_MODES: EditModeKey[] = ["select-rectangle", "select-polygon"];
@@ -105,6 +106,7 @@ export const useEditorStore = defineStore("editor", () => {
     delete: new ViewMode(),
     "select-rectangle": new ViewMode(),
     "select-polygon": new ViewMode(),
+    measure: new ViewMode(),
   };
 
   const editMode = computed(() => modeInstances[editModeKey.value]);

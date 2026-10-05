@@ -223,6 +223,13 @@ describe("useEditorStore", () => {
 
       expect(store.editModeKey).toBe("view");
     });
+
+    it("stays in measure mode when the entity group is re-selected", () => {
+      store.setEditMode("measure");
+      store.selectEntityGroup(GROUP);
+
+      expect(store.editModeKey).toBe("measure");
+    });
   });
 
   describe("snapping", () => {
