@@ -40,12 +40,16 @@ const props = defineProps<{
 }>();
 defineEmits<{ (e: "close"): void }>();
 
-const title = computed(() => `${props.target.groupName} #${props.target.id}`);
+const title = computed(() => `${props.target.groupName}`);
 
 const rows = computed(() =>
   props.measurement.kind === "line"
-    ? [{ name: "Length", value: formatLength(props.measurement.length) }]
+    ? [
+        { name: "Id", value: props.target.id },
+        { name: "Length", value: formatLength(props.measurement.length) },
+      ]
     : [
+        { name: "Id", value: props.target.id },
         { name: "Perimeter", value: formatLength(props.measurement.perimeter) },
         { name: "Area", value: formatArea(props.measurement.area) },
       ],
