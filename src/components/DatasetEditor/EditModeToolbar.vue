@@ -1,11 +1,17 @@
 <template>
   <div class="edit-mode-toolbar">
-    <o-tooltip v-for="mode in visibleModes" :key="mode.key" :label="mode.label" position="right">
+    <o-tooltip
+      v-for="mode in visibleModes"
+      :key="mode.key"
+      :label="tooltipFor(mode)"
+      position="right"
+    >
       <o-button
         :variant="store.editModeKey === mode.key ? 'primary' : 'white'"
         size="small"
         :icon-left="mode.icon"
         icon-pack="fas"
+        :disabled="isDisabled(mode.key)"
         @click="store.setEditMode(mode.key)"
         class="mode-btn"
       />
@@ -46,6 +52,8 @@ import { computed } from "vue";
 import { useEditorStore } from "@movici-flow-lib/stores/editor";
 import type { EditModeKey } from "@movici-flow-lib/stores/editor";
 import type { SnapType } from "@movici-flow-lib/utils/snapping";
+import { isMetricCRS } from "@movici-flow-lib/utils/measure";
+import { determineCRS } from "@movici-flow-lib/crs";
 
 const store = useEditorStore();
 
@@ -60,6 +68,7 @@ const baseModes: {
   { key: "modify", label: "Edit vertices", icon: "project-diagram" },
   { key: "translate", label: "Move feature", icon: "arrows-alt" },
   { key: "delete", label: "Delete feature", icon: "trash" },
+  { key: "measure", label: "Measure length / area", icon: "ruler-combined" },
 ];
 
 const drawModes: { key: EditModeKey; label: string; icon: string; geomType: string }[] = [
@@ -73,6 +82,21 @@ const snapTypeButtons: { type: SnapType; label: string; icon: string }[] = [
   { type: "segment", label: "Snap to segment", icon: "minus" },
   { type: "endpoint", label: "Snap to endpoint", icon: "dot-circle" },
 ];
+
+const measureSupported = computed(() => {
+  // loadDataset only sets proj4 after ensureProjection has registered the dataset CRS
+  void store.wgs84Features;
+  return isMetricCRS(store.dataset?.epsg_code);
+});
+
+function isDisabled(key: EditModeKey) {
+  return key === "measure" && !measureSupported.value;
+}
+
+function tooltipFor(mode: { key: EditModeKey; label: string }) {
+  if (!isDisabled(mode.key)) return mode.label;
+  return `Measuring needs a projected CRS in metres (dataset: ${determineCRS(store.dataset?.epsg_code)})`;
+}
 
 const visibleModes = computed(() => {
   const geomType = store.currentGroupGeometryType;
