@@ -44,8 +44,8 @@ export function useMeasureTool() {
     return measureFeature(feature, crs);
   });
 
-  watch(measurement, (m) => {
-    if (!m) clear();
+  watch([target, measurement], ([t, m]) => {
+    if (t && !m) clear();
   });
   // Leaving the tool  or reloading a dataset closes the popup
   watch(
