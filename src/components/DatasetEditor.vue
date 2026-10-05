@@ -18,8 +18,17 @@
             <EditorSidebar />
           </template>
           <!-- Hack to leave click registration 'on' because Deck doesn't provide direct event access-->
-          <template #control-zero="{ on }">
+          <template #control-zero="{ on, map }">
             <span :data-on="registerOn(on)" style="display: none" />
+            <MeasurePopup
+              v-if="map && measureTarget && measurement"
+              :map="map"
+              :target="measureTarget"
+              :measurement="measurement"
+              :view-state="camera.viewState"
+              :border-padding="measurePopupPadding"
+              @close="clearMeasure"
+            />
           </template>
         </Deck>
       </div>
@@ -28,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useEditorStore } from "../stores/editor";
 import { useEditorLayer } from "../composables/useEditorLayer";
 import { transformBBox } from "../crs";
@@ -41,8 +50,10 @@ import EditorToolbar from "./DatasetEditor/EditorToolbar.vue";
 import EditorSidebar from "./DatasetEditor/PropertySidebar.vue";
 import EditModeToolbar from "./DatasetEditor/EditModeToolbar.vue";
 import EditorLayerSelector from "./DatasetEditor/EditorLayerSelector.vue";
+import MeasurePopup from "./DatasetEditor/MeasurePopup.vue";
 import { MULTI_SELECT_MODES, DRAW_MODES } from "../stores/editor";
 import { useEditorSidebar } from "../composables/useEditorSidebar";
+import { useMeasureTool } from "../composables/useMeasureTool";
 
 const props = defineProps<{
   modelValue: ShortDataset;
@@ -51,6 +62,18 @@ const props = defineProps<{
 const store = useEditorStore();
 const sidebar = useEditorSidebar();
 const { layers } = useEditorLayer();
+const {
+  target: measureTarget,
+  measurement,
+  onClick: onMeasureClick,
+  clear: clearMeasure,
+} = useMeasureTool();
+
+// Keeps the popup clear of the left toolbar and the right property sidebar
+const measurePopupPadding = computed(() => ({
+  left: 60,
+  right: sidebar.collapsed.value ? 60 : 380,
+}));
 
 const DEFAULT_VIEWSTATE = useMoviciSettings().settings.defaultViewState;
 const camera = ref<DeckCamera>({ viewState: DEFAULT_VIEWSTATE });
@@ -64,6 +87,11 @@ function registerOn(on: (event: "click", callback: Record<string, DeckEventCallb
   _on = on;
   on("click", {
     editorClick: (payload) => {
+      // Measure mode owns map clicks and never changes group or selection
+      if (store.editModeKey === "measure") {
+        onMeasureClick(payload.pickInfo);
+        return;
+      }
       // Selection modes own map clicks
       if (
         MULTI_SELECT_MODES.includes(store.editModeKey) ||
