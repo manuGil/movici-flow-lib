@@ -16,7 +16,7 @@
 
         <div class="is-flex-grow-1" v-show="!collapsed">
           <div class="property-title is-flex is-align-items-baseline">
-            <p class="label mb-0 mr-2">Properties of:</p>
+            <p class="label mb-0 mr-2">Properties:</p>
             <span class="is-size-7">
               {{ groupLabel || "Property Editor" }}
             </span>
