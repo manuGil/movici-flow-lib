@@ -1,6 +1,5 @@
 /*
-A store to keep track changes to a dataset during editing. Enables undo and redo 
-on the dataset editor.
+A store to track changes to a dataset during editing. Enables undo and redo on the dataset editor.
 */
 import { defineStore } from "pinia";
 import { ref } from "vue";

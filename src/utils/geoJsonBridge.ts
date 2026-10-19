@@ -23,7 +23,7 @@ export const GEOMETRY_COLUMNS: Record<GeometryType, string[]> = {
   polygon: ["geometry.polygon_3d", "geometry.polygon_2d", "geometry.polygon"],
 };
 
-// defaulst for new entity groups
+// default for new entity groups
 export const DEFAULT_GEOMETRY_COLUMNS: Record<GeometryType, string[]> = {
   point: ["geometry.x", "geometry.y"],
   linestring: ["geometry.linestring_2d"],
